@@ -11,7 +11,7 @@ async def on_startup() -> None:
 
     await bot.set_my_commands(commands)
 
-    handlers.hand_start.hand_add(dp)
+    handlers.hand_start.hand_add()
     
     print('Бот запущен')
 
