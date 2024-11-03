@@ -8,7 +8,7 @@ class Sub(Filter):
     async def __call__(self, message: types.Message) -> bool:
         user_id = message.from_user.id
 
-        user_channel_status = await bot.get_chat_member(chat_id='-1001966101930', user_id=user_id)
+        user_channel_status = await bot.get_chat_member(chat_id='-1002444021491', user_id=user_id)
         if user_channel_status.status != 'left':
             return True
         else:

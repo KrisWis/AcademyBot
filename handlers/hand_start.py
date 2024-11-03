@@ -44,4 +44,4 @@ async def start(message: types.Message, state: FSMContext):
 
 
 def hand_add():
-    router.message.register(start, StateFilter(None), Sub(), CommandStart())
+    router.message.register(start, StateFilter("*"), Sub(), CommandStart())

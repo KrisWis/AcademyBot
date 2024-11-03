@@ -9,3 +9,9 @@ def start_menu():
     InlineKeyboardButton(text='👨‍💻 Поддержка', callback_data='start|support')]])
 
     return kb
+
+def cancel_operation():
+    kb = InlineKeyboardMarkup(
+    inline_keyboard=[[InlineKeyboardButton(text='Меню', callback_data='start_menu')]])
+
+    return kb
