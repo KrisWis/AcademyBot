@@ -1,13 +1,13 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 
-# Профиль
+# Меню профиля
 def profile_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
     [InlineKeyboardButton(text='📥 Пополнить', callback_data='profile|replenish'), 
     InlineKeyboardButton(text='📤 Вывести', callback_data='profile|withdraw')],
     [InlineKeyboardButton(text='🫂 Рефералы', callback_data='profile|referrals')],
-    [InlineKeyboardButton(text='🗂 Пользовательское соглашение', callback_data='profile|agreement')],
+    [InlineKeyboardButton(text='🗂 Пользовательское соглашение', url="https://ru.lipsum.com/")],
     [InlineKeyboardButton(text='↩️ Назад', callback_data='start_menu')]])
 
     return kb
@@ -31,22 +31,39 @@ def profile_confirmation_menu():
 
     return kb
 
-# Пополнить
+# Кнопка "📥 Пополнить"
 def profile_choose_payment_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
     [InlineKeyboardButton(text='🤖 CryptoBot', callback_data='profile_choose_payment|CryptoBot')],
     [InlineKeyboardButton(text='🇷🇺 Банковская карта', callback_data='profile_choose_payment|bankCard')],
-    [InlineKeyboardButton(text='↩️ Назад', callback_data='profile_choose_payment|back')]])
+    [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
 
     return kb
 
-# Вывести
+# Кнопка "📤 Вывести"
 def profile_choose_withdraw_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
     [InlineKeyboardButton(text='🤖 CryptoBot', callback_data='profile_choose_withdraw|CryptoBot')],
     [InlineKeyboardButton(text='🇷🇺 Банковская карта', callback_data='profile_choose_withdraw|bankCard')],
-    [InlineKeyboardButton(text='↩️ Назад', callback_data='profile_choose_withdraw|back')]])
+    [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
+
+    return kb
+
+# Кнопка "🫂 Рефералы"
+def profile_referrals_menu():
+    kb = InlineKeyboardMarkup(row_width=1, 
+    inline_keyboard=[
+    [InlineKeyboardButton(text='📊 Статистика', callback_data='profile_referrals_menu|dynamics'),
+    InlineKeyboardButton(text='📁 Материалы', callback_data='profile_referrals_menu|materials')],
+    [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
+
+    return kb
+
+def profile_referrals_back_kb():
+    kb = InlineKeyboardMarkup(row_width=1, 
+    inline_keyboard=[
+    [InlineKeyboardButton(text='↩️ Назад', callback_data='profile|referrals')]])
 
     return kb

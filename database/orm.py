@@ -1,5 +1,5 @@
 from sqlalchemy import *
-from database.models import UsersOrm, UserProfileOrm
+from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm
 from database.db import Base, engine, async_session, date
 from sqlalchemy.orm import joinedload
 
@@ -35,20 +35,22 @@ class AsyncORM:
             return bool(result)
         
     @staticmethod
-    async def add_user(user_id: int, username: str, user_reg_time: date, user_geo: str, user_tag: str,
-    user_status: str, completed_courses: list[str], balance: int) -> bool:
+    async def add_user(user_id: int, username: str, user_reg_date: date, user_geo: str,
+        referrer_id: int | None = None) -> bool:
 
         user = await AsyncORM.select_user(user_id=user_id)
 
         # И если пользователя нету в бд
         if not user:
-            user = UsersOrm(user_id=user_id, username=username, user_reg_time=user_reg_time, user_geo=user_geo, user_tag=user_tag)
-            user_profile = UserProfileOrm(user_id=user_id, status=user_status,
-            completed_courses=completed_courses, balance=balance)
+            user = UsersOrm(user_id=user_id, username=username, user_reg_date=user_reg_date, user_geo=user_geo)
+            user_profile = UsersProfileOrm(user_id=user_id, status="Ученик",
+            completed_courses=[], purchased_courses=[], balance=0)
+            user_refInfo = UsersRefsOrm(user_id=user_id, referrer_id=referrer_id, ref_percent=20)
             
             async with async_session() as session:
                 session.add(user)
                 session.add(user_profile)
+                session.add(user_refInfo)
 
                 await session.commit() 
             return True
@@ -57,9 +59,40 @@ class AsyncORM:
         
 
     @staticmethod
-    async def get_profile_info(user_id: int) -> UserProfileOrm:
+    async def get_profile_info(user_id: int) -> UsersProfileOrm:
         async with async_session() as session:
 
-            query = select(UserProfileOrm).filter_by(user_id=user_id).options(joinedload(UserProfileOrm.user))
+            query = select(UsersProfileOrm).filter_by(user_id=user_id).options(joinedload(UsersProfileOrm.user))
             result = await session.execute(query)
             return result.scalar_one_or_none()
+        
+    @staticmethod
+    async def get_ref_info(user_id: int) -> UsersRefsOrm:
+        async with async_session() as session:
+
+            query = select(UsersRefsOrm).filter_by(user_id=user_id).options(joinedload(UsersRefsOrm.profile))
+            result = await session.execute(query)
+            return result.scalar_one_or_none()
+        
+    @staticmethod
+    async def get_user_referrals(user_id: int) -> list[UsersRefsOrm]:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersRefsOrm).where(UsersRefsOrm.referrer_id == user_id)
+            )
+
+            referrals = result.scalars().all()
+
+
+            return referrals
+        
+    @staticmethod
+    async def get_referrals_purchased_courses(user_id: int) -> list[PurchasedCoursesOrm]:
+        user_referrals = await AsyncORM.get_user_referrals(user_id)
+        purchased_courses_arr = []
+
+        for user_referral in user_referrals:
+            purchased_courses_arr.append(*user_referral.profile.purchased_courses)
+
+        return purchased_courses_arr

@@ -18,23 +18,24 @@ async def start(message: types.Message, state: FSMContext):
     formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
     
     if not await AsyncORM.user_exists(user_id):
-        start_tag = message.text[7:]
+        referrer_id = message.text[7:] or None
 
-        if len(start_tag) != 0:
-            if start_tag.isdigit() and start_tag != str(user_id):
-                start_tag = start_tag
-        else:
-            start_tag = 'Органика'
+        if referrer_id:
+            if referrer_id.isdigit() and referrer_id != str(user_id):
+
+                await message.answer(
+                    chat_id=referrer_id,
+                    text=text.new_referral_text.format(username)
+                )
+
+                referrer_id = int(referrer_id)  
 
         await AsyncORM.add_user(
             user_id,
             username,
             formatted_time,
             message.from_user.language_code,
-            start_tag,
-            "Ученик",
-            [],
-            0
+            referrer_id
         )
     
     await message.answer_animation(caption=text.start_text, reply_markup=Keyboards.start_menu(), 
