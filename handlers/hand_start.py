@@ -6,11 +6,16 @@ import datetime
 from database.orm import AsyncORM
 from aiogram.fsm.context import FSMContext
 from filters import Sub
+from keyboards import Keyboards
 
 async def start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username
     now = datetime.datetime.now()
+
+    # await AsyncORM.create_tables()
+
+    formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
     
     if not await AsyncORM.user_exists(user_id):
         start_tag = message.text[7:]
@@ -24,16 +29,16 @@ async def start(message: types.Message, state: FSMContext):
         await AsyncORM.add_user(
             user_id,
             username,
-            now,
+            formatted_time,
             message.from_user.language_code,
-            start_tag
+            start_tag,
+            "Ученик",
+            [],
+            0
         )
-
-        await message.answer(text.start_text)
-
-    else:
-        user_info = await AsyncORM.select_user(user_id)
-        await message.answer(text.start_text)
+    
+    await message.answer_animation(caption=text.start_text, reply_markup=Keyboards.start_menu(), 
+    animation='https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif')
 
     await state.set_state(None)
 

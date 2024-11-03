@@ -12,8 +12,14 @@ async def on_startup() -> None:
     await bot.set_my_commands(commands)
 
     handlers.hand_start.hand_add()
+
+    handlers.profile_hand.hand_add()
+
+    handlers.callhand_start.hand_add()
     
-    print('Бот запущен')
+    bot_info = await bot.get_me()
+
+    print(f'Бот запущен - @{bot_info.username}')
 
     await dp.start_polling(bot, skip_updates=True)
 
