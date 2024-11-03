@@ -5,6 +5,7 @@ from aiogram.filters import CommandStart, StateFilter
 import datetime
 from database.orm import AsyncORM
 from aiogram.fsm.context import FSMContext
+from filters import Sub
 
 async def start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
@@ -38,4 +39,4 @@ async def start(message: types.Message, state: FSMContext):
 
 
 def hand_add():
-    router.message.register(start, StateFilter(None), CommandStart())
+    router.message.register(start, StateFilter(None), Sub(), CommandStart())
