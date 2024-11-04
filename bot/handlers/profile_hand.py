@@ -1,6 +1,7 @@
 from datetime import datetime
 from aiogram import types
-from utils import profile_text,  text
+from utils import profile_text
+from utils import text
 from InstanceBot import router, bot
 from database.orm import AsyncORM
 from keyboards import profileKeyboards
@@ -9,14 +10,16 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from credit_card_checker import CreditCardChecker
 from database.models import PurchasedCoursesOrm
+from utils import cryptoPayment
 
 # Отправка меню профиля
 async def send_profile(call: types.CallbackQuery) -> None:
     user_id = call.from_user.id
-    profile_info = await AsyncORM.get_profile_info(user_id)
     message_id = call.message.message_id
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    profile_info = await AsyncORM.get_profile_info(user_id)
 
     await call.message.answer(profile_text.profile_text.
     format(profile_info.status, profile_info.user.user_reg_date, 
@@ -40,12 +43,15 @@ async def send_profile_choose_payment(call: types.CallbackQuery, state: FSMConte
 # Отправка меню выбора суммы
 async def send_profile_choose_sumOfPayment(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
+    methodOfPayment = call.data.split("|")[1]
 
     data = await state.get_data()
 
     await bot.delete_message(chat_id=user_id, message_id=data["kb_messageid"])
 
     await call.message.answer(profile_text.profile_choose_sumOfPayment_text, reply_markup=profileKeyboards.profile_choose_sum_kb())
+
+    await state.update_data(methodOfPayment=methodOfPayment)
 
     await state.set_state(ProfileStates.choose_sumOfPayment)
 
@@ -57,12 +63,20 @@ async def send_profile_made_payment(message: types.Message, state: FSMContext):
 
     await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
 
+    data = await state.get_data()
+
     if message.text == "↩️ Назад":
         await message.answer(profile_text.profile_choose_sumOfPayment_text, 
         reply_markup=profileKeyboards.profile_choose_payment_menu())
 
-    else: 
-        await message.answer("Здесь будет подтверждение и оплата")
+    elif data["methodOfPayment"] == "CryptoBot": 
+        payment_summa = int(message.text.split()[0])
+        invoice = await cryptoPayment.create_crypto_bot_invoice(payment_summa, "USDT")
+        
+        await message.answer(profile_text.profile_confirmation_crypto_text.format(payment_summa, invoice.amount),
+        reply_markup=profileKeyboards.check_payment_crypto(invoice.bot_invoice_url, invoice.invoice_id))
+
+        # TODO: доделать функционал пополнения криптовалютой
 
     await state.set_state(None)
 
@@ -125,13 +139,6 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
 
         await state.set_state(ProfileStates.write_cardNumber)
 
-    elif data["methodOfWithdraw"] == "Криптовалюта":
-
-        await message.answer(profile_text.profile_confirmation_text
-        .format(data["methodOfWithdraw"], "Криптовалюта", sumofWithdraw), reply_markup=profileKeyboards.profile_confirmation_menu())
-
-        await state.set_state(None)
-
 
 # Отправка сообщения с подтверждением данных о выводе
 async def send_profile_confirmation(message: types.Message, state: FSMContext) -> None:
@@ -140,8 +147,8 @@ async def send_profile_confirmation(message: types.Message, state: FSMContext) -
     cart_details = message.text
 
     if CreditCardChecker(cart_details).valid():
-        await message.answer(profile_text.profile_confirmation_text
-        .format(data["methodOfWithdraw"], cart_details, data["sumOfWithdraw"]), reply_markup=profileKeyboards.profile_confirmation_menu())
+        await message.answer(profile_text.profile_confirmation_card_text
+        .format(cart_details, data["sumOfWithdraw"]), reply_markup=profileKeyboards.profile_confirmation_menu())
 
         await state.set_state(None)
     else: 
@@ -257,7 +264,7 @@ def hand_add():
 
     router.callback_query.register(send_profile_choose_payment, lambda c: c.data == 'profile|replenish')
 
-    router.callback_query.register(send_profile_choose_sumOfPayment, lambda c: c.data in ["profile_choose_payment|CryptoBot", "profile_choose_payment|bankCard"])
+    router.callback_query.register(send_profile_choose_sumOfPayment, lambda c: c.data in ["profile_choose_replenish|CryptoBot", "profile_choose_replenish|bankCard"])
 
     router.callback_query.register(send_profile_choose_withdraw, lambda c: c.data == 'profile|withdraw')
 

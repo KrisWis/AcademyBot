@@ -1,8 +1,7 @@
 from sqlalchemy import *
 from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm, SupportTicketsOrm
 from database.db import Base, engine, async_session, date
-from sqlalchemy.orm import joinedload
-from utils import const
+from sqlalchemy.orm import joinedload, selectinload
 
 # Создаём класс для ORM
 class AsyncORM:
@@ -78,7 +77,7 @@ class AsyncORM:
         async with async_session() as session:
 
             result = await session.execute(
-                select(UsersRefsOrm).where(UsersRefsOrm.referrer_id == user_id)
+                select(UsersRefsOrm).where(UsersRefsOrm.referrer_id == user_id).options(joinedload(UsersRefsOrm.profile).selectinload(UsersProfileOrm.purchased_courses))
             )
 
             referrals = result.scalars().all()
@@ -94,7 +93,8 @@ class AsyncORM:
         purchased_courses_arr = []
 
         for user_referral in user_referrals:
-            purchased_courses_arr.append(*user_referral.profile.purchased_courses)
+            if (user_referral.profile.purchased_courses):
+                purchased_courses_arr.append(*user_referral.profile.purchased_courses)
 
         return purchased_courses_arr
     

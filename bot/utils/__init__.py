@@ -1,1 +1,2 @@
-from utils import text, profile_text, const, support_text, faq_text
+from utils.texts import faq_text, profile_text, support_text, text
+from utils import const, cryptoPayment

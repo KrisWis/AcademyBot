@@ -39,8 +39,8 @@ def profile_confirmation_menu():
 def profile_choose_payment_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
-    [InlineKeyboardButton(text='🤖 CryptoBot', callback_data='profile_choose_payment|CryptoBot')],
-    [InlineKeyboardButton(text='🇷🇺 Банковская карта', callback_data='profile_choose_payment|bankCard')],
+    [InlineKeyboardButton(text='🤖 CryptoBot', callback_data='profile_choose_replenish|CryptoBot')],
+    [InlineKeyboardButton(text='🇷🇺 Банковская карта', callback_data='profile_choose_replenish|bankCard')],
     [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
 
     return kb
@@ -73,5 +73,17 @@ def profile_referrals_back_kb():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
     [InlineKeyboardButton(text='↩️ Назад', callback_data='profile|referrals')]])
+
+    return kb
+
+
+# Клавиатура для проверки оплаты с помощью криптовалюты
+def check_payment_crypto(pay_url, invoice_id):
+    kb = InlineKeyboardMarkup(row_width=1,
+    inline_keyboard=[
+        [InlineKeyboardButton(text='Оплатить', url=pay_url)],
+        [InlineKeyboardButton(text='Проверить оплату', callback_data=f'payment|CryptoBot|{invoice_id}')],
+        [InlineKeyboardButton(text='Отменить', callback_data=f'payment|CryptoBot|back')]
+        ])
 
     return kb

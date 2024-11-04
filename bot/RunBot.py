@@ -3,8 +3,13 @@ from InstanceBot import bot, dp
 import handlers
 import asyncio
 import logging
+from database.orm import AsyncORM
 
 async def on_startup() -> None:
+
+    # Пересоздаём таблицы в базе данных. TODO: УБРАТЬ В ПРОДЕ
+    await AsyncORM.create_tables()
+
     # Определяем команды и добавляем их в бота
     commands = [
         BotCommand(command='/start', description='Перезапустить бота'),

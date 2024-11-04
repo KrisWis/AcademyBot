@@ -1,6 +1,6 @@
 from aiogram import types
 from utils import text
-from InstanceBot import router
+from InstanceBot import router, bot
 from aiogram.filters import CommandStart, StateFilter
 import datetime
 from database.orm import AsyncORM
@@ -15,17 +15,20 @@ async def start(message: types.Message, state: FSMContext):
     username = message.from_user.username
     now = datetime.datetime.now()
 
-    # await AsyncORM.create_tables()
+    data = await state.get_data()
 
     formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
     
     if not await AsyncORM.select_user(user_id):
         referrer_id = message.text[7:] or None
 
+        if "referrer_id" in data:
+            referrer_id = data["referrer_id"]
+
         if referrer_id:
             if referrer_id.isdigit() and referrer_id != str(user_id):
 
-                await message.answer(
+                await bot.send_message(
                     chat_id=referrer_id,
                     text=text.new_referral_text.format(username)
                 )
