@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from utils import text
 from keyboards import Keyboards
 
+# Отправка стартового меню
 async def start_menu(call: types.CallbackQuery, state: FSMContext):
     user_id = call.from_user.id
     message_id = call.message.message_id
@@ -17,6 +18,7 @@ async def start_menu(call: types.CallbackQuery, state: FSMContext):
 
     await state.set_state(None)
 
+# Отправка сообщения об отмене операции
 async def cancel_operation(call: types.CallbackQuery, state: FSMContext):
     user_id = call.from_user.id
     message_id = call.message.message_id

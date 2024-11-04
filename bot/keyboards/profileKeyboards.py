@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 
-# Меню профиля
+# Клавиатура с меню профиля
 def profile_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
@@ -13,6 +13,7 @@ def profile_menu():
     return kb
 
 
+# Клавиатура с выбором суммы
 def profile_choose_sum_kb():
     kb = [
         [KeyboardButton(text="5000 RUB")],
@@ -23,6 +24,8 @@ def profile_choose_sum_kb():
 
     return keyboard
 
+
+# Клавиатура с подтверждением/отменой
 def profile_confirmation_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
@@ -31,7 +34,8 @@ def profile_confirmation_menu():
 
     return kb
 
-# Кнопка "📥 Пополнить"
+
+# Клавиатура с меню выбора способа оплаты для пополнения
 def profile_choose_payment_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
@@ -41,7 +45,8 @@ def profile_choose_payment_menu():
 
     return kb
 
-# Кнопка "📤 Вывести"
+
+# Клавиатура с меню выбора способа оплаты для вывода
 def profile_choose_withdraw_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
@@ -51,7 +56,8 @@ def profile_choose_withdraw_menu():
 
     return kb
 
-# Кнопка "🫂 Рефералы"
+
+# Клавиатура с меню "Рефералы"
 def profile_referrals_menu():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[
@@ -61,6 +67,8 @@ def profile_referrals_menu():
 
     return kb
 
+
+# Клавиатура с возвратом назад в меню "Рефералы"
 def profile_referrals_back_kb():
     kb = InlineKeyboardMarkup(row_width=1, 
     inline_keyboard=[

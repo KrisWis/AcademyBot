@@ -1,7 +1,8 @@
 from sqlalchemy import *
-from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm
+from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm, SupportTicketsOrm
 from database.db import Base, engine, async_session, date
 from sqlalchemy.orm import joinedload
+from utils import const
 
 # Создаём класс для ORM
 class AsyncORM:
@@ -18,6 +19,7 @@ class AsyncORM:
             await conn.run_sync(Base.metadata.create_all)
             engine.echo = True
 
+    # Получение пользователя по id
     @staticmethod
     async def select_user(user_id: int) -> UsersOrm:
         async with async_session() as session:
@@ -26,21 +28,13 @@ class AsyncORM:
 
             return result
         
-    @staticmethod
-    async def user_exists(user_id: int) -> bool:
-        async with async_session() as session:
-
-            result = await session.get(UsersOrm, user_id)
-
-            return bool(result)
-        
+    # Добавление пользователя в базу данных
     @staticmethod
     async def add_user(user_id: int, username: str, user_reg_date: date, user_geo: str,
         referrer_id: int | None = None) -> bool:
 
         user = await AsyncORM.select_user(user_id=user_id)
 
-        # И если пользователя нету в бд
         if not user:
             user = UsersOrm(user_id=user_id, username=username, user_reg_date=user_reg_date, user_geo=user_geo)
             user_profile = UsersProfileOrm(user_id=user_id, status="Ученик",
@@ -58,6 +52,7 @@ class AsyncORM:
             return False
         
 
+    # Получение информации о профиле пользователя по его id
     @staticmethod
     async def get_profile_info(user_id: int) -> UsersProfileOrm:
         async with async_session() as session:
@@ -66,6 +61,8 @@ class AsyncORM:
             result = await session.execute(query)
             return result.scalar_one_or_none()
         
+
+    # Получение реферальной информации пользователя по его id
     @staticmethod
     async def get_ref_info(user_id: int) -> UsersRefsOrm:
         async with async_session() as session:
@@ -74,6 +71,8 @@ class AsyncORM:
             result = await session.execute(query)
             return result.scalar_one_or_none()
         
+
+    # Получение всех реферралов пользователя по его id
     @staticmethod
     async def get_user_referrals(user_id: int) -> list[UsersRefsOrm]:
         async with async_session() as session:
@@ -87,6 +86,8 @@ class AsyncORM:
 
             return referrals
         
+    
+    # Получение всех купленных курсов реферралами пользователя по его id
     @staticmethod
     async def get_referrals_purchased_courses(user_id: int) -> list[PurchasedCoursesOrm]:
         user_referrals = await AsyncORM.get_user_referrals(user_id)
@@ -96,3 +97,17 @@ class AsyncORM:
             purchased_courses_arr.append(*user_referral.profile.purchased_courses)
 
         return purchased_courses_arr
+    
+
+    # Добавление тикета поддержки в базу данных
+    @staticmethod
+    async def add_supportTicket(user_id: int, text: str) -> bool:
+
+        supportTicket = SupportTicketsOrm(user_id=user_id, support_ticket_text=text)
+
+        async with async_session() as session:
+            session.add(supportTicket)
+
+            await session.commit() 
+            
+        return True

@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 
 # Создаём таблицы
 
-# Таблицы с данными пользователей
+# Таблица с общими данными пользователей
 class UsersOrm(Base):
     __tablename__ = "users"
     
@@ -21,6 +21,8 @@ class UsersOrm(Base):
         UniqueConstraint('user_id', name='unique_user'),
     )
 
+
+# Таблица с данными о профилях пользователей
 class UsersProfileOrm(Base):
     __tablename__ = 'usersProfiles'
 
@@ -39,6 +41,7 @@ class UsersProfileOrm(Base):
     refInfo: Mapped["UsersRefsOrm"] = relationship("UsersRefsOrm", back_populates="profile")
     
 
+# Таблица с данными о реф.системе пользователей
 class UsersRefsOrm(Base):
     __tablename__ = 'usersRefs'
 
@@ -65,3 +68,13 @@ class PurchasedCoursesOrm(Base):
     purchase_date: Mapped[str] = mapped_column(nullable=False)
     
     price: Mapped[int] = mapped_column(Integer())
+
+# Таблица с тикетами поддержки
+class SupportTicketsOrm(Base):
+    __tablename__ = 'supportTickets'
+
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True, autoincrement=True)
+
+    user: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id])
+
+    support_ticket_text: Mapped[str] = mapped_column(String())

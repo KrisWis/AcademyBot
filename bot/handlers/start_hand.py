@@ -8,6 +8,8 @@ from aiogram.fsm.context import FSMContext
 from filters import Sub
 from keyboards import Keyboards
 
+
+# Отправка стартового меню при вводе "/start"
 async def start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username
@@ -17,7 +19,7 @@ async def start(message: types.Message, state: FSMContext):
 
     formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
     
-    if not await AsyncORM.user_exists(user_id):
+    if not await AsyncORM.select_user(user_id):
         referrer_id = message.text[7:] or None
 
         if referrer_id:

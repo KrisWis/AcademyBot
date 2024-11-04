@@ -24,7 +24,7 @@ async def send_profile(call: types.CallbackQuery) -> None:
     reply_markup=profileKeyboards.profile_menu())
     
 
-# Кнопка "📥 Пополнить"
+# Отправка меню выбора способа оплаты
 async def send_profile_choose_payment(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
@@ -37,6 +37,7 @@ async def send_profile_choose_payment(call: types.CallbackQuery, state: FSMConte
     await state.update_data(kb_messageid=kb_messageid.message_id)
 
 
+# Отправка меню выбора суммы
 async def send_profile_choose_sumOfPayment(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
 
@@ -49,6 +50,7 @@ async def send_profile_choose_sumOfPayment(call: types.CallbackQuery, state: FSM
     await state.set_state(ProfileStates.choose_sumOfPayment)
 
 
+# Отправка подтверждения оплаты
 async def send_profile_made_payment(message: types.Message):
     user_id = message.from_user.id
     message_id = message.message_id
@@ -60,7 +62,7 @@ async def send_profile_made_payment(message: types.Message):
         reply_markup=profileKeyboards.profile_choose_payment_menu())
 
 
-# Кнопка "📤 Вывести"
+# Отправка меню выбора способа вывода
 async def send_profile_choose_withdraw(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
@@ -73,6 +75,7 @@ async def send_profile_choose_withdraw(call: types.CallbackQuery, state: FSMCont
     await state.update_data(kb_messageid=kb_messageid.message_id)
 
 
+# Отправка меню выбора суммы вывода
 async def send_profile_choose_sumOfWithdraw(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     temp = call.data.split("|")
@@ -92,6 +95,7 @@ async def send_profile_choose_sumOfWithdraw(call: types.CallbackQuery, state: FS
         await state.update_data(methodOfWithdraw="Криптовалюта")
 
 
+# Отправка сообщения о вводе банковской карте
 async def send_profile_write_cardNumber(message: types.Message, state: FSMContext) -> None:
 
     if message.text == "↩️ Назад":
@@ -123,6 +127,8 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
 
         await state.set_state(None)
 
+
+# Отправка сообщения с подтверждением данных о выводе
 async def send_profile_confirmation(message: types.Message, state: FSMContext) -> None:
     data = await state.get_data()
 
@@ -137,18 +143,19 @@ async def send_profile_confirmation(message: types.Message, state: FSMContext) -
         await message.answer(text.invalid_data_text)
 
 
+# Отправка сообщения о успешном выводе средств
 async def send_withdraw_agree(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
-    await call.message.answer(profile_text.profile_withDraw_agree)
+    await call.message.answer(profile_text.profile_withDraw_agree_text)
 
     await state.set_state(None)
 
 
-# Кнопка "🫂 Рефералы"
+# Отправка меню "Реферралы"
 async def send_referrals_menu(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
@@ -161,6 +168,7 @@ async def send_referrals_menu(call: types.CallbackQuery, state: FSMContext) -> N
     format(f'https://t.me/{bot_username}?start={user_id}'), reply_markup=profileKeyboards.profile_referrals_menu())
 
 
+# Отправка сообщения с динамикой и статистикой реферралов пользователя
 async def send_referrals_dynamics(call: types.CallbackQuery) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
@@ -222,6 +230,7 @@ async def send_referrals_dynamics(call: types.CallbackQuery) -> None:
     user_referrals_purchased_allTime_courses_totalPrice, user_balance, ref_percent), reply_markup=profileKeyboards.profile_referrals_back_kb())
 
 
+# Отправка материалов реферралов пользователя
 async def send_referrals_materials(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id

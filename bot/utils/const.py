@@ -1,0 +1,5 @@
+student = "Ученик"
+supportAgent = "Агент поддержки"
+manager = "Менеджер"
+developer = "Разработчик"
+leader = "Руководитель"
