@@ -1,1 +1,1 @@
-from handlers import hand_start, callhand_start, profile_hand, webApp_hand
+from handlers import start_callhand, start_hand, profile_hand, support_hand

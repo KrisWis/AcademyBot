@@ -15,3 +15,10 @@ def cancel_operation():
     inline_keyboard=[[InlineKeyboardButton(text='Меню', callback_data='start_menu')]])
 
     return kb
+
+
+def backTo_mainMenu_kb():
+    kb = InlineKeyboardMarkup(
+    inline_keyboard=[[InlineKeyboardButton(text='↩️ Назад', callback_data='start_menu')]])
+
+    return kb

@@ -1,10 +1,8 @@
 from datetime import datetime
 from aiogram import types
-from utils import profile_text
-from InstanceBot import router
-from utils import text
+from utils import profile_text,  text
+from InstanceBot import router, bot
 from database.orm import AsyncORM
-from InstanceBot import bot
 from keyboards import profileKeyboards
 from states import ProfileStates
 from aiogram.filters import StateFilter

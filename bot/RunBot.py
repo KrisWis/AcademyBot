@@ -12,19 +12,21 @@ async def on_startup() -> None:
 
     await bot.set_my_commands(commands)
 
-    handlers.hand_start.hand_add()
+    handlers.start_hand.hand_add()
 
     handlers.profile_hand.hand_add()
 
-    handlers.callhand_start.hand_add()
-    
-    handlers.webApp_hand.hand_add()
+    handlers.support_hand.hand_add()
+
+    handlers.start_callhand.hand_add()
     
     bot_info = await bot.get_me()
 
     logging.basicConfig(level=logging.INFO)
 
     print(f'Бот запущен - @{bot_info.username}')
+
+    await bot.delete_webhook(drop_pending_updates=True)
 
     await dp.start_polling(bot, skip_updates=True)
 
