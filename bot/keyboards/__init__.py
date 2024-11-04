@@ -1,1 +1,1 @@
-from keyboards import Keyboards, profileKeyboards
+from keyboards import profileKeyboards, globalKeyboards

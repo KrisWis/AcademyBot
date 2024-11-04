@@ -1,20 +1,20 @@
 from aiogram import types
 from InstanceBot import router, bot
 from utils import support_text
-from keyboards import Keyboards
+from keyboards import globalKeyboards
 from states import User
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 from database.orm import AsyncORM
 
-# Отправка сообщения, чтобы пользователь отправил сообщение
+# Отправка сообщения, чтобы пользователь отправил сообщение в поддержку
 async def send_support(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
-    await call.message.answer(support_text.support_text, reply_markup=Keyboards.backTo_mainMenu_kb())
+    await call.message.answer(support_text.support_text, reply_markup=globalKeyboards.backTo_mainMenu_kb())
 
     await state.set_state(User.SupportStates.write_text_of_supportTicket)
     

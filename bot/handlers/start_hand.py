@@ -6,7 +6,7 @@ import datetime
 from database.orm import AsyncORM
 from aiogram.fsm.context import FSMContext
 from filters import Sub
-from keyboards import Keyboards
+from keyboards import globalKeyboards
 
 
 # Отправка стартового меню при вводе "/start"
@@ -40,7 +40,7 @@ async def start(message: types.Message, state: FSMContext):
             referrer_id
         )
     
-    await message.answer_animation(caption=text.start_text, reply_markup=Keyboards.start_menu(), 
+    await message.answer_animation(caption=text.start_text, reply_markup=globalKeyboards.start_menu(), 
     animation='https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif')
 
     await state.set_state(None)

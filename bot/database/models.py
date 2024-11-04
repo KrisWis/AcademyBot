@@ -26,7 +26,7 @@ class UsersOrm(Base):
 class UsersProfileOrm(Base):
     __tablename__ = 'usersProfiles'
 
-    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True)
 
     status: Mapped[str] = mapped_column(String())
 
@@ -45,7 +45,7 @@ class UsersProfileOrm(Base):
 class UsersRefsOrm(Base):
     __tablename__ = 'usersRefs'
 
-    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('usersProfiles.user_id', ondelete='CASCADE'), primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('usersProfiles.user_id', ondelete='CASCADE'), primary_key=True)
 
     referrer_id: Mapped[int | None] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
     referrer: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[referrer_id])
@@ -59,7 +59,7 @@ class UsersRefsOrm(Base):
 class PurchasedCoursesOrm(Base):
     __tablename__ = 'purchasedCourses'
 
-    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('usersProfiles.user_id', ondelete='CASCADE'), primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('usersProfiles.user_id', ondelete='CASCADE'), primary_key=True)
 
     user_profile: Mapped[UsersProfileOrm] = relationship("UsersProfileOrm", back_populates="purchased_courses")
 
@@ -73,7 +73,9 @@ class PurchasedCoursesOrm(Base):
 class SupportTicketsOrm(Base):
     __tablename__ = 'supportTickets'
 
-    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(BigInteger(), primary_key=True, autoincrement=True)
+
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
 
     user: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id])
 

@@ -18,6 +18,8 @@ async def on_startup() -> None:
 
     handlers.support_hand.hand_add()
 
+    handlers.faq_hand.hand_add()
+
     handlers.start_callhand.hand_add()
     
     bot_info = await bot.get_me()

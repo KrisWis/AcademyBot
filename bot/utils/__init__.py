@@ -1,1 +1,1 @@
-from utils import text, profile_text, const, support_text
+from utils import text, profile_text, const, support_text, faq_text
