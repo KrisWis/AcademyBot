@@ -1,0 +1,4 @@
+aiogram==3.13.1
+credit_card_checker==0.0.3
+asyncpg==0.30.0
+python-dotenv==1.0.1
