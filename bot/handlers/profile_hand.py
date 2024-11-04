@@ -51,7 +51,7 @@ async def send_profile_choose_sumOfPayment(call: types.CallbackQuery, state: FSM
 
 
 # Отправка подтверждения оплаты
-async def send_profile_made_payment(message: types.Message):
+async def send_profile_made_payment(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     message_id = message.message_id
 
@@ -60,6 +60,11 @@ async def send_profile_made_payment(message: types.Message):
     if message.text == "↩️ Назад":
         await message.answer(profile_text.profile_choose_sumOfPayment_text, 
         reply_markup=profileKeyboards.profile_choose_payment_menu())
+
+    else: 
+        await message.answer("Здесь будет подтверждение и оплата")
+
+    await state.set_state(None)
 
 
 # Отправка меню выбора способа вывода
