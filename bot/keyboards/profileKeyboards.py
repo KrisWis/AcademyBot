@@ -87,3 +87,12 @@ def check_payment_crypto(pay_url, invoice_id):
         ])
 
     return kb
+
+
+# Клавиатура с чеком на вывод по кнопке "Пополнить"
+def send_check_url_kb(check_url: str):
+    kb = InlineKeyboardMarkup(row_width=1, 
+    inline_keyboard=[
+    [InlineKeyboardButton(text='Вывести 📤', url=check_url)]])
+
+    return kb

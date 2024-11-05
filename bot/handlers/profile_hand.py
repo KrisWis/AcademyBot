@@ -11,6 +11,7 @@ from aiogram.fsm.context import FSMContext
 from credit_card_checker import CreditCardChecker
 from database.models import PurchasedCoursesOrm
 from utils import cryptoPayment
+import asyncio
 
 # Отправка меню профиля
 async def send_profile(call: types.CallbackQuery) -> None:
@@ -20,6 +21,8 @@ async def send_profile(call: types.CallbackQuery) -> None:
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
     profile_info = await AsyncORM.get_profile_info(user_id)
+
+    print(profile_info)
 
     await call.message.answer(profile_text.profile_text.
     format(profile_info.status, profile_info.user.user_reg_date, 
@@ -38,6 +41,8 @@ async def send_profile_choose_payment(call: types.CallbackQuery, state: FSMConte
     reply_markup=profileKeyboards.profile_choose_payment_menu())
 
     await state.update_data(kb_messageid=kb_messageid.message_id)
+
+    await state.update_data(financeMethod="replenish")
 
 
 # Отправка меню выбора суммы
@@ -69,16 +74,28 @@ async def send_profile_made_payment(message: types.Message, state: FSMContext):
         await message.answer(profile_text.profile_choose_sumOfPayment_text, 
         reply_markup=profileKeyboards.profile_choose_payment_menu())
 
-    elif data["methodOfPayment"] == "CryptoBot": 
+        return
+    
+    if len(message.text.split()) > 1:
         payment_summa = int(message.text.split()[0])
-        await state.update_data(payment_summa=payment_summa)
+    else:
+        payment_summa = int(message.text)
+
+    await state.update_data(payment_summa=payment_summa)
+
+    if data["methodOfPayment"] == "CryptoBot": 
 
         invoice = await cryptoPayment.create_crypto_bot_invoice(payment_summa, "USDT")
         
         await message.answer(profile_text.profile_confirmation_crypto_text.format(payment_summa, invoice.amount),
         reply_markup=profileKeyboards.check_payment_crypto(invoice.bot_invoice_url, invoice.invoice_id))
 
-    await state.set_state(None)
+        await state.set_state(None)
+
+    elif data["methodOfPayment"] == "bankCard":
+        await message.answer(profile_text.profile_payment_write_cardNumber_text)
+
+        await state.set_state(ProfileStates.write_cardNumber)
 
 
 # Обработка подтверждения/отклонения оплаты на пополнение
@@ -88,9 +105,9 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     message_id = call.message.message_id
 
-    await bot.delete_message(chat_id=user_id, message_id=message_id)
-
     if temp[2] == "back":
+        await bot.delete_message(chat_id=user_id, message_id=message_id)
+
         await call.message.answer(profile_text.profile_choose_sumOfPayment_text, reply_markup=profileKeyboards.profile_choose_sum_kb())
 
         await state.set_state(ProfileStates.choose_sumOfPayment)
@@ -104,6 +121,8 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
         )
 
     else:
+        await bot.delete_message(chat_id=user_id, message_id=message_id)
+        
         await AsyncORM.change_user_balance(user_id, int(data["payment_summa"]))
         
         await call.message.answer(profile_text.profile_payment_success)
@@ -124,6 +143,8 @@ async def send_profile_choose_withdraw(call: types.CallbackQuery, state: FSMCont
     reply_markup=profileKeyboards.profile_choose_withdraw_menu())
 
     await state.update_data(kb_messageid=kb_messageid.message_id)
+
+    await state.update_data(financeMethod="withdraw")
 
 
 # Отправка меню выбора суммы вывода
@@ -148,6 +169,7 @@ async def send_profile_choose_sumOfWithdraw(call: types.CallbackQuery, state: FS
 
 # Отправка сообщения о вводе банковской карте
 async def send_profile_write_cardNumber(message: types.Message, state: FSMContext) -> None:
+    user_id = message.from_user.id
 
     if message.text == "↩️ Назад":
         kb_messageid = await message.answer(profile_text.profile_choose_withdraw_text, 
@@ -159,7 +181,10 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
 
         return
 
-    sumofWithdraw = message.text
+    if len(message.text.split()) > 1:
+        sumofWithdraw = int(message.text.split()[0])
+    else:
+        sumofWithdraw = int(message.text)
 
     data = await state.get_data()
     
@@ -167,10 +192,36 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
 
     if data["methodOfWithdraw"] == "Банковская карта":
 
-        await message.answer(profile_text.profile_write_cardNumber_text)
+        await message.answer(profile_text.profile_withdraw_write_cardNumber_text)
 
         await state.set_state(ProfileStates.write_cardNumber)
 
+    elif data["methodOfWithdraw"] == "Криптовалюта":
+        try:
+            check = await cryptoPayment.create_crypto_bot_check(sumofWithdraw)
+            
+            message_id = await message.answer(profile_text.profile_withDraw_check_text, reply_markup=profileKeyboards.send_check_url_kb(check.bot_check_url))
+
+            while True:
+                await asyncio.sleep(30)
+
+                check_info = await cryptoPayment.get_check_info(check.check_id)
+
+                if check_info.status == "activated":
+                    break
+                    
+            await bot.delete_message(chat_id=user_id, message_id=message_id.message_id)
+
+            await message.answer(profile_text.profile_withDraw_check_activated_text)
+
+            await AsyncORM.change_user_balance(user_id, -sumofWithdraw)
+
+        except:
+            await message.answer(text.error_payment_text)
+
+        await state.set_state(None)
+
+        await state.clear()
 
 # Отправка сообщения с подтверждением данных о выводе
 async def send_profile_confirmation(message: types.Message, state: FSMContext) -> None:
@@ -179,16 +230,24 @@ async def send_profile_confirmation(message: types.Message, state: FSMContext) -
     cart_details = message.text
 
     if CreditCardChecker(cart_details).valid():
-        await message.answer(profile_text.profile_confirmation_card_text
-        .format(cart_details, data["sumOfWithdraw"]), reply_markup=profileKeyboards.profile_confirmation_menu())
 
-        await state.set_state(None)
+        if data["financeMethod"] == "withdraw":
+            await message.answer(profile_text.profile_confirmation_card_text
+            .format(cart_details, data["sumOfWithdraw"]), reply_markup=profileKeyboards.profile_confirmation_menu())
+
+            await state.set_state(None)
+
+        if data["financeMethod"] == "replenish":
+            await message.answer(profile_text.profile_confirmation_card_text
+            .format(cart_details, data["payment_summa"]), reply_markup=profileKeyboards.profile_confirmation_menu())
+
+            await state.set_state(None)
     else: 
         await message.answer(text.invalid_data_text)
 
 
-# Отправка сообщения о успешном выводе средств
-async def send_withdraw_agree(call: types.CallbackQuery, state: FSMContext) -> None:
+# Обработка нажатия на кнопку "✅ Подтвердить" в клавиатуре подтверждения данных
+async def click_confirmation_agree(call: types.CallbackQuery, state: FSMContext) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
 
@@ -304,7 +363,7 @@ def hand_add():
 
     router.callback_query.register(send_profile_choose_sumOfWithdraw, lambda c: c.data in ["profile_choose_withdraw|CryptoBot", "profile_choose_withdraw|bankCard"])
 
-    router.callback_query.register(send_withdraw_agree, lambda c: c.data == "profile_confirmation|agree")
+    router.callback_query.register(click_confirmation_agree, lambda c: c.data == "profile_confirmation|agree")
 
     router.callback_query.register(send_referrals_menu, lambda c: c.data == 'profile|referrals')
 

@@ -23,8 +23,13 @@ profile_choose_withdraw_text = '''
 
 profile_choose_sumOfWithdraw_text = 'Введите сумму на вывод без пробелов одним сообщением.'
 
-profile_write_cardNumber_text = '''
+profile_withdraw_write_cardNumber_text = '''
 Осуществляем вывод на карты: МИР, Visa, Mastercard
+
+Введите номер карты:'''
+
+profile_payment_write_cardNumber_text = '''
+Пополнение осуществляется с карт: МИР, Visa, Mastercard
 
 Введите номер карты:'''
 
@@ -36,7 +41,7 @@ profile_confirmation_card_text = '''
 Способ: Банковская карта
 └ Реквизиты: {}
 
-Сумма: {}'''
+Сумма: {} RUB'''
 
 profile_confirmation_crypto_text = '''
 Проверьте данные.
@@ -50,6 +55,10 @@ profile_confirmation_crypto_text = '''
 В USDT: {}'''
 
 profile_withDraw_agree_text = 'чет бабки придут в течение суток'
+
+profile_withDraw_check_text = "Ваш чек на вывод доступен по кнопке ниже:"
+
+profile_withDraw_check_activated_text = "Средства успешно получены ✅"
 
 # Кнопка "🫂 Рефералы"
 profile_referrals_menu_text = '''

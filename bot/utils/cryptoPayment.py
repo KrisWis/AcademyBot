@@ -1,11 +1,11 @@
-from aiocryptopay import AioCryptoPay
+from aiocryptopay import AioCryptoPay, Networks
 import os
 
+cryptopay = AioCryptoPay(os.getenv("CRYPTOPAY_API"), network=Networks.MAIN_NET)
+# cryptopay = AioCryptoPay(os.getenv("TEST_CRYPTOPAY_API"), network=Networks.TEST_NET)
 
 # Функция для конвертации суммы конкретной валюты в USD
 async def get_crypto_bot_sum(summa: float, currency: str):
-    cryptopay = AioCryptoPay(os.getenv("CRYPTOPAY_API"))
-
     courses = await cryptopay.get_exchange_rates()
 
     await cryptopay.close()
@@ -17,8 +17,6 @@ async def get_crypto_bot_sum(summa: float, currency: str):
 
 # Функция для проверки того, что оплата прошла успешно
 async def check_crypto_bot_invoice(invoice_id: int):
-    cryptopay = AioCryptoPay(os.getenv("CRYPTOPAY_API"))
-
     invoice = await cryptopay.get_invoices(invoice_ids=invoice_id)
     await cryptopay.close()
 
@@ -28,15 +26,27 @@ async def check_crypto_bot_invoice(invoice_id: int):
     return False
 
 
-# Функция для совершения оплаты через cryptobot
+# Функция для совершения оплаты
 async def create_crypto_bot_invoice(summa: float, currency: str):
-    crypto_bot = AioCryptoPay(os.getenv("CRYPTOPAY_API"))
-
     amount = await get_crypto_bot_sum(summa, currency)
-    invoice = await crypto_bot.create_invoice(
+    invoice = await cryptopay.create_invoice(
         asset=currency,
         amount=amount
     )
-    await crypto_bot.close()
+    await cryptopay.close()
 
     return invoice
+
+
+# Функция для обработки вывода средств
+async def create_crypto_bot_check(summa: float):
+    check = await cryptopay.create_check(asset='USDT', amount=summa)
+
+    return check
+
+
+# Функция получения чека по его id при выводе
+async def get_check_info(check_id: int):
+    check_info = await cryptopay.get_checks(asset='USDT', check_ids=check_id, count=1)
+
+    return check_info
