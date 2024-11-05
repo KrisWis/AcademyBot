@@ -56,7 +56,7 @@ async def send_profile_choose_sumOfPayment(call: types.CallbackQuery, state: FSM
     await state.set_state(ProfileStates.choose_sumOfPayment)
 
 
-# Отправка подтверждения оплаты
+# Отправка подтверждения оплаты на пополнение
 async def send_profile_made_payment(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     message_id = message.message_id
@@ -71,14 +71,46 @@ async def send_profile_made_payment(message: types.Message, state: FSMContext):
 
     elif data["methodOfPayment"] == "CryptoBot": 
         payment_summa = int(message.text.split()[0])
+        await state.update_data(payment_summa=payment_summa)
+
         invoice = await cryptoPayment.create_crypto_bot_invoice(payment_summa, "USDT")
         
         await message.answer(profile_text.profile_confirmation_crypto_text.format(payment_summa, invoice.amount),
         reply_markup=profileKeyboards.check_payment_crypto(invoice.bot_invoice_url, invoice.invoice_id))
 
-        # TODO: доделать функционал пополнения криптовалютой
-
     await state.set_state(None)
+
+
+# Обработка подтверждения/отклонения оплаты на пополнение
+async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
+    user_id = call.from_user.id
+    temp = call.data.split('|')
+    data = await state.get_data()
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    if temp[2] == "back":
+        await call.message.answer(profile_text.profile_choose_sumOfPayment_text, reply_markup=profileKeyboards.profile_choose_sum_kb())
+
+        await state.set_state(ProfileStates.choose_sumOfPayment)
+
+        return
+
+    if not await cryptoPayment.check_crypto_bot_invoice(int(temp[2])):
+        await call.message.answer(
+            text=text.error_payment_text,
+            show_alert=True
+        )
+
+    else:
+        await AsyncORM.change_user_balance(user_id, int(data["payment_summa"]))
+        
+        await call.message.answer(profile_text.profile_payment_success)
+
+        await state.set_state(None)
+
+        await state.clear()
 
 
 # Отправка меню выбора способа вывода
@@ -265,6 +297,8 @@ def hand_add():
     router.callback_query.register(send_profile_choose_payment, lambda c: c.data == 'profile|replenish')
 
     router.callback_query.register(send_profile_choose_sumOfPayment, lambda c: c.data in ["profile_choose_replenish|CryptoBot", "profile_choose_replenish|bankCard"])
+
+    router.callback_query.register(check_crypto_payment, lambda c: c.data.startswith("payment|CryptoBot"))
 
     router.callback_query.register(send_profile_choose_withdraw, lambda c: c.data == 'profile|withdraw')
 

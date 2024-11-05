@@ -7,8 +7,8 @@ from database.orm import AsyncORM
 
 async def on_startup() -> None:
 
-    # Пересоздаём таблицы в базе данных. TODO: УБРАТЬ В ПРОДЕ
-    await AsyncORM.create_tables()
+    # Пересоздаём таблицы в базе данных (для тестов).
+    # await AsyncORM.create_tables()
 
     # Определяем команды и добавляем их в бота
     commands = [

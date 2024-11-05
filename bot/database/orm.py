@@ -111,3 +111,31 @@ class AsyncORM:
             await session.commit() 
             
         return True
+
+
+    # Получение баланса пользователя
+    @staticmethod
+    async def get_balance(user_id: int) -> int:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersProfileOrm.balance).where(UsersProfileOrm.user_id == user_id)
+            )
+            user_balance = result.scalar()
+
+            return user_balance
+        
+
+    # Изменение баланса пользователя
+    @staticmethod
+    async def change_user_balance(user_id: int, amount: int) -> bool:
+        past_balance = await AsyncORM.get_balance(user_id)
+
+        async with async_session() as session:
+            stmt = (update(UsersProfileOrm)
+                    .where(UsersProfileOrm.user_id == user_id)
+                    .values(balance=past_balance + amount))
+            
+            await session.execute(stmt)
+            await session.commit()
+            return True
