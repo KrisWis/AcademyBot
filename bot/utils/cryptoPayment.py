@@ -13,17 +13,6 @@ async def get_crypto_bot_sum(summa: float, currency: str):
     for course in courses:
         if course.source == currency and course.target == 'RUB':
             return round(float(summa / course.rate), 2)
-        
-
-# Функция для проверки того, что оплата прошла успешно
-async def check_crypto_bot_invoice(invoice_id: int):
-    invoice = await cryptopay.get_invoices(invoice_ids=invoice_id)
-    await cryptopay.close()
-
-    if invoice.status == 'paid':
-        return True
-
-    return False
 
 
 # Функция для совершения оплаты
@@ -36,6 +25,17 @@ async def create_crypto_bot_invoice(summa: float, currency: str):
     await cryptopay.close()
 
     return invoice
+
+
+# Функция для проверки того, что оплата прошла успешно
+async def check_crypto_bot_invoice(invoice_id: int):
+    invoice = await cryptopay.get_invoices(invoice_ids=invoice_id)
+    await cryptopay.close()
+
+    if invoice.status == 'paid':
+        return True
+
+    return False
 
 
 # Функция для обработки вывода средств

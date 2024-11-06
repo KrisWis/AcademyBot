@@ -201,7 +201,9 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
             check = await cryptoPayment.create_crypto_bot_check(sumofWithdraw)
             
             message_id = await message.answer(profile_text.profile_withDraw_check_text, reply_markup=profileKeyboards.send_check_url_kb(check.bot_check_url))
-
+            
+            await AsyncORM.change_user_balance(user_id, -sumofWithdraw)
+            
             while True:
                 await asyncio.sleep(30)
 
@@ -213,9 +215,6 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
             await bot.delete_message(chat_id=user_id, message_id=message_id.message_id)
 
             await message.answer(profile_text.profile_withDraw_check_activated_text)
-
-            await AsyncORM.change_user_balance(user_id, -sumofWithdraw)
-
         except:
             await message.answer(text.error_payment_text)
 
