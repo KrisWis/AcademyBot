@@ -7,6 +7,7 @@ from database.orm import AsyncORM
 from aiogram.fsm.context import FSMContext
 from filters import Sub
 from keyboards import globalKeyboards
+from utils import const
 
 
 # Отправка стартового меню при вводе "/start"
@@ -19,7 +20,7 @@ async def start(message: types.Message, state: FSMContext):
 
     formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
     
-    if not await AsyncORM.select_user(user_id):
+    if not await AsyncORM.get_user(user_id):
         referrer_id = message.text[7:] or None
 
         if "referrer_id" in data:
@@ -43,7 +44,8 @@ async def start(message: types.Message, state: FSMContext):
             referrer_id
         )
     
-    await message.answer_animation(caption=text.start_text, reply_markup=globalKeyboards.start_menu(), 
+    user_status = await AsyncORM.get_user_status(user_id)
+    await message.answer_animation(caption=text.start_text, reply_markup=globalKeyboards.start_menu(user_status == const.supportAgent), 
     animation='https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif')
 
     await state.set_state(None)

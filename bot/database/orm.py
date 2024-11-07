@@ -1,7 +1,8 @@
 from sqlalchemy import *
 from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm, SupportTicketsOrm
 from database.db import Base, engine, async_session, date
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload
+from utils import const
 
 # Создаём класс для ORM
 class AsyncORM:
@@ -20,7 +21,7 @@ class AsyncORM:
 
     # Получение пользователя по id
     @staticmethod
-    async def select_user(user_id: int) -> UsersOrm:
+    async def get_user(user_id: int) -> UsersOrm:
         async with async_session() as session:
 
             result = await session.get(UsersOrm, user_id)
@@ -32,11 +33,11 @@ class AsyncORM:
     async def add_user(user_id: int, username: str, user_reg_date: date, user_geo: str,
         referrer_id: int | None = None) -> bool:
 
-        user = await AsyncORM.select_user(user_id=user_id)
+        user = await AsyncORM.get_user(user_id=user_id)
 
         if not user:
             user = UsersOrm(user_id=user_id, username=username, user_reg_date=user_reg_date, user_geo=user_geo)
-            user_profile = UsersProfileOrm(user_id=user_id, status="Ученик",
+            user_profile = UsersProfileOrm(user_id=user_id, status=const.supportAgent,
             completed_courses=[], purchased_courses=[], balance=0)
             user_refInfo = UsersRefsOrm(user_id=user_id, referrer_id=referrer_id, ref_percent=20)
             
@@ -113,6 +114,34 @@ class AsyncORM:
         return True
 
 
+    # Получение всех тикетов поддержки из базы данных
+    @staticmethod
+    async def get_all_supportTickets() -> bool:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(SupportTicketsOrm).options(joinedload(SupportTicketsOrm.user))
+            )
+
+            supportTickets = result.scalars().all()
+
+            return supportTickets
+    
+
+    # Получение тикета поддержки по его id
+    @staticmethod
+    async def get_supportTicket(id: int) -> UsersOrm:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(SupportTicketsOrm).where(SupportTicketsOrm.id == id).options(joinedload(SupportTicketsOrm.user))
+            )
+
+            support_ticket = result.scalar()
+
+            return support_ticket
+        
+
     # Получение баланса пользователя
     @staticmethod
     async def get_balance(user_id: int) -> int:
@@ -139,3 +168,17 @@ class AsyncORM:
             await session.execute(stmt)
             await session.commit()
             return True
+        
+
+    # Получение статуса пользователя
+    @staticmethod
+    async def get_user_status(user_id: int) -> int:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersProfileOrm.status).where(UsersProfileOrm.user_id == user_id)
+            )
+            user_status = result.scalar()
+
+            return user_status
+        

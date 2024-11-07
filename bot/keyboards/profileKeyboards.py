@@ -20,7 +20,7 @@ def profile_choose_sum_kb():
         [KeyboardButton(text="10000 RUB")],
         [KeyboardButton(text="↩️ Назад")]
     ]
-    keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, input_field_placeholder="Выберите нужную вам сумму", one_time_keyboard=True)
+    keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, input_field_placeholder="Выберите нужную вам сумму")
 
     return keyboard
 

@@ -93,7 +93,7 @@ async def send_profile_made_payment(message: types.Message, state: FSMContext):
         await state.set_state(None)
 
     elif data["methodOfPayment"] == "bankCard":
-        await message.answer(profile_text.profile_payment_write_cardNumber_text)
+        await message.answer(profile_text.profile_payment_write_cardNumber_text, reply_markup=types.ReplyKeyboardRemove())
 
         await state.set_state(ProfileStates.write_cardNumber)
 
@@ -117,6 +117,7 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
     if not await cryptoPayment.check_crypto_bot_invoice(int(temp[2])):
         await call.message.answer(
             text=text.error_payment_text,
+            reply_markup=types.ReplyKeyboardRemove(),
             show_alert=True
         )
 
@@ -125,7 +126,7 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
         
         await AsyncORM.change_user_balance(user_id, int(data["payment_summa"]))
         
-        await call.message.answer(profile_text.profile_payment_success)
+        await call.message.answer(profile_text.profile_payment_success, reply_markup=types.ReplyKeyboardRemove())
 
         await state.set_state(None)
 
@@ -192,7 +193,7 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
 
     if data["methodOfWithdraw"] == "Банковская карта":
 
-        await message.answer(profile_text.profile_withdraw_write_cardNumber_text)
+        await message.answer(profile_text.profile_withdraw_write_cardNumber_text, reply_markup=types.ReplyKeyboardRemove())
 
         await state.set_state(ProfileStates.write_cardNumber)
 
@@ -214,9 +215,9 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
                     
             await bot.delete_message(chat_id=user_id, message_id=message_id.message_id)
 
-            await message.answer(profile_text.profile_withDraw_check_activated_text)
+            await message.answer(profile_text.profile_withDraw_check_activated_text, reply_markup=types.ReplyKeyboardRemove())
         except:
-            await message.answer(text.error_payment_text)
+            await message.answer(text.error_payment_text, reply_markup=types.ReplyKeyboardRemove())
 
         await state.set_state(None)
 
