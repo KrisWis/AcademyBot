@@ -10,5 +10,5 @@ class ProfileStates(StatesGroup):
 # Состояния при нажатии кнопки "Поддержка"
 class SupportStates(StatesGroup):
     write_text_of_supportTicket = State()
-
+    write_text_for_answer_supportTicket = State()
     

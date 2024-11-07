@@ -4,7 +4,7 @@ from utils import faq_text
 from keyboards import faqKeyboards
 from aiogram.fsm.context import FSMContext
 from utils import support_text
-from states import User
+from states import Student
 
 # Отправка меню "FAQ"
 async def send_faqMenu(call: types.CallbackQuery, state: FSMContext) -> None:
@@ -25,7 +25,7 @@ async def send_faq_support(call: types.CallbackQuery, state: FSMContext) -> None
 
     await call.message.answer(support_text.support_text, reply_markup=faqKeyboards.backTo_faqMenu_kb())
 
-    await state.set_state(User.SupportStates.write_text_of_supportTicket)
+    await state.set_state(Student.SupportStates.write_text_of_supportTicket)
 
 
 # Отправка ответа на вопрос по его номеру

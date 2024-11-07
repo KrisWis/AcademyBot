@@ -77,6 +77,12 @@ class SupportTicketsOrm(Base):
 
     user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
 
-    user: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id])
+    user: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id], viewonly=True)
 
-    support_ticket_text: Mapped[str] = mapped_column(String())
+    text: Mapped[str] = mapped_column(String())
+
+    supportAgent_id: Mapped[int | None] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
+
+    supportAgent: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id], viewonly=True)
+
+    status: Mapped[str] = mapped_column(String())

@@ -104,7 +104,7 @@ class AsyncORM:
     @staticmethod
     async def add_supportTicket(user_id: int, text: str) -> bool:
 
-        supportTicket = SupportTicketsOrm(user_id=user_id, support_ticket_text=text)
+        supportTicket = SupportTicketsOrm(user_id=user_id, text=text, supportAgent_id=None, status="open")
 
         async with async_session() as session:
             session.add(supportTicket)
@@ -112,15 +112,45 @@ class AsyncORM:
             await session.commit() 
             
         return True
+    
+
+    # Добавление агента поддержки в базу данных при ответе на тикет поддержки
+    @staticmethod
+    async def add_supportAgent_for_supportTicket(supportTicket_id: int, supportAgent_id: int) -> bool:
+
+        async with async_session() as session:
+            result = await session.execute(select(SupportTicketsOrm).where(SupportTicketsOrm.id == supportTicket_id))
+            supportTicket = result.scalar()
+
+            supportTicket.supportAgent_id = supportAgent_id
+
+            await session.commit()
+                
+        return True
+    
+
+    # Изменение статуса тикета поддержки
+    @staticmethod
+    async def change_supportTicket_status(supportTicket_id: int, status: str) -> bool:
+
+        async with async_session() as session:
+            result = await session.execute(select(SupportTicketsOrm).where(SupportTicketsOrm.id == supportTicket_id))
+            supportTicket = result.scalar()
+
+            supportTicket.status = status
+
+            await session.commit()
+                
+        return True
 
 
     # Получение всех тикетов поддержки из базы данных
     @staticmethod
-    async def get_all_supportTickets() -> bool:
+    async def get_all_opened_supportTickets() -> bool:
         async with async_session() as session:
 
             result = await session.execute(
-                select(SupportTicketsOrm).options(joinedload(SupportTicketsOrm.user))
+                select(SupportTicketsOrm).where(SupportTicketsOrm.status == "open").options(joinedload(SupportTicketsOrm.user))
             )
 
             supportTickets = result.scalars().all()
@@ -130,16 +160,16 @@ class AsyncORM:
 
     # Получение тикета поддержки по его id
     @staticmethod
-    async def get_supportTicket(id: int) -> UsersOrm:
+    async def get_supportTicket(id: int) -> SupportTicketsOrm:
         async with async_session() as session:
 
             result = await session.execute(
                 select(SupportTicketsOrm).where(SupportTicketsOrm.id == id).options(joinedload(SupportTicketsOrm.user))
             )
 
-            support_ticket = result.scalar()
+            supportTicket = result.scalar()
 
-            return support_ticket
+            return supportTicket
         
 
     # Получение баланса пользователя

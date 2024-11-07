@@ -10,7 +10,7 @@ def start_menu(isSupportAgent: bool = False):
     InlineKeyboardButton(text='👨‍💻 Поддержка', callback_data='start|support')]])
 
     if (isSupportAgent):
-        kb.inline_keyboard.append([InlineKeyboardButton(text='📨 Активные тикеты', callback_data='start|support_tickets')])
+        kb.inline_keyboard.append([InlineKeyboardButton(text='📨 Активные тикеты', callback_data='start|supportTickets')])
 
     return kb
 

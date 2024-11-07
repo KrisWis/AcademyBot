@@ -5,7 +5,7 @@ from utils import text
 from InstanceBot import router, bot
 from database.orm import AsyncORM
 from keyboards import profileKeyboards
-from states import ProfileStates
+from states.Student import ProfileStates
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from credit_card_checker import CreditCardChecker
