@@ -49,3 +49,16 @@ def user_answer_to_supportTicket_kb(supportTicket_id: int):
                     [InlineKeyboardButton(text='🔒 Закрыть тикет', callback_data=f'supportTickets|{supportTicket_id}|close')]])
 
     return kb
+
+
+# Клавиатура, отсылаемая пользователю для оценивания Агента Поддержки по 5-бальной шкале
+def evaluate_supportAgent_kb(supportTicket_id: int):
+    kb = InlineKeyboardMarkup(
+    inline_keyboard=[[
+    InlineKeyboardButton(text='1 🤢', callback_data=f'supportTickets|{supportTicket_id}|evaluate|1'),
+    InlineKeyboardButton(text='2 🙁', callback_data=f'supportTickets|{supportTicket_id}|evaluate|2'),
+    InlineKeyboardButton(text='3 🙂', callback_data=f'supportTickets|{supportTicket_id}|evaluate|3'),
+    InlineKeyboardButton(text='4 😁', callback_data=f'supportTickets|{supportTicket_id}|evaluate|4'),
+    InlineKeyboardButton(text='5 🥰', callback_data=f'supportTickets|{supportTicket_id}|evaluate|5')]])
+
+    return kb

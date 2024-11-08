@@ -35,15 +35,25 @@ user_answer_supportTicket_text = '''
 '''
 
 close_supportTicket_supportAgent_text = '''
-Пользователь <i>@{}</i> закрыл тикет поддержки <i>№{}</i>! ✅:
+Пользователь <i>@{}</i> закрыл тикет поддержки <i>№{}</i>! ✅
 
 Хорошая работа!
 '''
 
-answer_to_supportTicket_text = "✍️ Напишите свой ответ пользователю"
+close_supportTicket_user_text = 'Тикет поддержки <i>№{}</i> успешно закрыт! ✅'
 
-send_answer_for_supportTicket_success_text = "Ответ успешно доставлен пользователю! ✅"
+answer_to_user_for_supportTicket_text = "✍️ Напишите свой ответ пользователю"
+
+answer_to_supportAgent_for_supportTicket_text = "✍️ Напишите свой ответ Агенту поддержки"
+
+send_answer_to_user_for_supportTicket_success_text = "Ответ успешно доставлен пользователю! ✅"
+
+send_answer_to_supportAgent_for_supportTicket_success_text = "Ответ успешно доставлен Агенту поддержки! ✅"
 
 send_answer_for_supportTicket_error_text = "Произошла непредвиденная ошибка! Попробуйте ещё раз."
 
-send_answer_for_supportTicket_alreadyAnswered_text = "на данный тикет уже ответил другой Агент Поддержки!"
+send_answer_for_supportTicket_alreadyAnswered_text = "На данный тикет уже ответил другой Агент Поддержки!"
+
+evaluate_supportAgent_text = 'Оцените Агента поддержки <i>@{}</i> по 5-бальной шкале:'
+
+evaluate_supportAgent_success_text = 'Агент поддержки <i>@{}</i> успешно оценён на {}/5! ✅'

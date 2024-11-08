@@ -124,18 +124,19 @@ async def answer_to_supportTicket(call: types.CallbackQuery, state: FSMContext) 
 
     await state.update_data(answer_supportTicket_id=supportTicket_id)
 
-    await call.message.answer(support_text.answer_to_supportTicket_text)
-
     if supportTicket.user_id == user_id:
+        await call.message.answer(support_text.answer_to_supportAgent_for_supportTicket_text)
         await state.set_state(SupportStates.write_text_for_answer_supportTicket)
 
     elif supportTicket.supportAgent_id == user_id:
+        await call.message.answer(support_text.answer_to_user_for_supportTicket_text)
         await state.set_state(SupportAgentStates.write_text_for_answer)
 
 
 # Отправка ответа агента поддержки пользователю
 async def send_supportAgent_answer_for_supportTicket(message: types.Message, state: FSMContext) -> None:
     username = message.from_user.username
+    user_id = message.from_user.id
 
     data = await state.get_data()
 
@@ -143,9 +144,11 @@ async def send_supportAgent_answer_for_supportTicket(message: types.Message, sta
 
     supportTicket_id = data["answer_supportTicket_id"]
 
+    await AsyncORM.add_message_for_supportTicket(supportTicket_id, supportAgent_answer_text)
+
     supportTicket = await AsyncORM.get_supportTicket(supportTicket_id)
 
-    if (supportTicket.status != "active"):
+    if supportTicket.status != "active" or supportTicket.supportAgent_id == user_id:
         try:
             await AsyncORM.change_supportTicket_status(supportTicket_id, "active")
 
@@ -153,7 +156,7 @@ async def send_supportAgent_answer_for_supportTicket(message: types.Message, sta
                     text=support_text.supportAgent_answer_supportTicket_text.format(username, supportTicket_id, supportAgent_answer_text), 
                     reply_markup=supportKeyboards.user_answer_to_supportTicket_kb(supportTicket_id))
             
-            await message.answer(support_text.send_answer_for_supportTicket_success_text)
+            await message.answer(support_text.send_answer_to_user_for_supportTicket_success_text)
 
         except Exception as e:
             logger.info(f"Ошибка при ответе на тикет поддержки: {e}")
@@ -175,6 +178,8 @@ async def send_user_answer_for_supportTicket(message: types.Message, state: FSMC
 
     supportTicket_id = data["answer_supportTicket_id"]
 
+    await AsyncORM.add_message_for_supportTicket(supportTicket_id, supportAgent_answer_text)
+
     supportTicket = await AsyncORM.get_supportTicket(supportTicket_id)
 
     try:
@@ -182,7 +187,7 @@ async def send_user_answer_for_supportTicket(message: types.Message, state: FSMC
                 text=support_text.user_answer_supportTicket_text.format(username, supportTicket_id, supportAgent_answer_text), 
                 reply_markup=supportKeyboards.supportAgent_answer_to_supportTicket_kb(supportTicket_id))
         
-        await message.answer(support_text.send_answer_for_supportTicket_success_text)
+        await message.answer(support_text.send_answer_to_supportAgent_for_supportTicket_success_text)
 
     except Exception as e:
         logger.info(f"Ошибка при ответе на тикет поддержки: {e}")
@@ -192,7 +197,7 @@ async def send_user_answer_for_supportTicket(message: types.Message, state: FSMC
 
 
 # Закрытие тикета поддержки пользователем
-async def close_supportTicket(call: types.CallbackQuery, state: FSMContext) -> None:
+async def close_supportTicket(call: types.CallbackQuery) -> None:
     user_id = call.from_user.id
     username = call.from_user.username
     message_id = call.message.message_id
@@ -208,12 +213,38 @@ async def close_supportTicket(call: types.CallbackQuery, state: FSMContext) -> N
     await AsyncORM.change_supportTicket_status(supportTicket_id, "closed")
 
     await bot.send_message(chat_id=supportTicket.supportAgent_id, 
-        text=support_text.user_answer_supportTicket_text.format(username, supportTicket_id))
+        text=support_text.close_supportTicket_supportAgent_text.format(username, supportTicket_id))
     
-    # TODO: проверить прошлый функционал, доделать здесь - добавить возможность оценить сотрудника (добавить модель для агента поддержки), и сделать добавление сообщений тикета в бд
+    await call.message.answer(support_text.close_supportTicket_user_text.format(supportTicket_id))
+
+    await call.message.answer(support_text.evaluate_supportAgent_text.format(supportTicket.supportAgent.username),
+                            reply_markup=supportKeyboards.evaluate_supportAgent_kb(supportTicket_id))
 
 
+# Оценивание Агента Поддержки пользователем после закрытия тикета
+async def evaluate_supportAgent(call: types.CallbackQuery, state: FSMContext) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
 
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    temp = call.data.split("|")
+
+    supportTicket_id = int(temp[1])
+
+    supportAgent_evaluate_mark = int(temp[3])
+
+    supportTicket = await AsyncORM.get_supportTicket(supportTicket_id)
+
+    await AsyncORM.add_review_for_supportAgent(supportTicket_id, supportTicket.supportAgent_id, supportAgent_evaluate_mark)
+
+    await call.message.answer(support_text.evaluate_supportAgent_success_text.
+                            format(supportTicket.supportAgent.username, supportAgent_evaluate_mark))
+
+    await state.set_state(None)
+
+    await state.clear()
+    
 def hand_add():
     router.message.register(append_supportTicket_success, StateFilter(SupportStates.write_text_of_supportTicket))
 
@@ -232,3 +263,5 @@ def hand_add():
     router.callback_query.register(answer_to_supportTicket, lambda c: re.match(r"^supportTickets\|([^\|]+)\|answer$", c.data))
 
     router.callback_query.register(close_supportTicket, lambda c: re.match(r"^supportTickets\|([^\|]+)\|close$", c.data))
+
+    router.callback_query.register(evaluate_supportAgent, lambda c: re.match(r"^supportTickets\|(\d+)\|evaluate\|(\d+)$", c.data))

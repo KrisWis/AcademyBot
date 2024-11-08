@@ -1,5 +1,5 @@
 from sqlalchemy import *
-from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm, SupportTicketsOrm
+from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm, SupportTicketsOrm, SupportAgentsReviewsOrm
 from database.db import Base, engine, async_session, date
 from sqlalchemy.orm import joinedload
 from utils import const
@@ -83,7 +83,6 @@ class AsyncORM:
 
             referrals = result.scalars().all()
 
-
             return referrals
         
     
@@ -104,7 +103,7 @@ class AsyncORM:
     @staticmethod
     async def add_supportTicket(user_id: int, text: str) -> bool:
 
-        supportTicket = SupportTicketsOrm(user_id=user_id, text=text, supportAgent_id=None, status="open")
+        supportTicket = SupportTicketsOrm(user_id=user_id, text=text, supportAgent_id=None, status="open", messages=[])
 
         async with async_session() as session:
             session.add(supportTicket)
@@ -120,7 +119,7 @@ class AsyncORM:
 
         async with async_session() as session:
             result = await session.execute(select(SupportTicketsOrm).where(SupportTicketsOrm.id == supportTicket_id))
-            supportTicket = result.scalar()
+            supportTicket: SupportTicketsOrm = result.scalar()
 
             supportTicket.supportAgent_id = supportAgent_id
 
@@ -135,7 +134,7 @@ class AsyncORM:
 
         async with async_session() as session:
             result = await session.execute(select(SupportTicketsOrm).where(SupportTicketsOrm.id == supportTicket_id))
-            supportTicket = result.scalar()
+            supportTicket: SupportTicketsOrm = result.scalar()
 
             supportTicket.status = status
 
@@ -164,7 +163,7 @@ class AsyncORM:
         async with async_session() as session:
 
             result = await session.execute(
-                select(SupportTicketsOrm).where(SupportTicketsOrm.id == id).options(joinedload(SupportTicketsOrm.user))
+                select(SupportTicketsOrm).where(SupportTicketsOrm.id == id).options(joinedload(SupportTicketsOrm.user), joinedload(SupportTicketsOrm.supportAgent))
             )
 
             supportTicket = result.scalar()
@@ -212,3 +211,31 @@ class AsyncORM:
 
             return user_status
         
+
+    # Добавление отзыва об Агенте поддержки
+    @staticmethod
+    async def add_review_for_supportAgent(supportTicket_id: int, supportAgent_id: int, evaluation: int) -> bool:
+        
+        supportAgentReview = SupportAgentsReviewsOrm(supportAgent_id=supportAgent_id, supportTicket_id=supportTicket_id, evaluation=evaluation)
+
+        async with async_session() as session:
+            session.add(supportAgentReview)
+
+            await session.commit() 
+            
+        return True
+    
+
+    # Добавление сообщения тикета поддержки
+    @staticmethod
+    async def add_message_for_supportTicket(supportTicket_id: int, message_text: str) -> bool:
+
+        async with async_session() as session:
+            result = await session.execute(select(SupportTicketsOrm).where(SupportTicketsOrm.id == supportTicket_id))
+            supportTicket: SupportTicketsOrm = result.scalar()
+
+            supportTicket.messages.append(message_text)
+
+            await session.commit()
+                
+        return True

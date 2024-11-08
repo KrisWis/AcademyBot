@@ -69,6 +69,7 @@ class PurchasedCoursesOrm(Base):
     
     price: Mapped[int] = mapped_column(Integer())
 
+
 # Таблица с тикетами поддержки
 class SupportTicketsOrm(Base):
     __tablename__ = 'supportTickets'
@@ -83,6 +84,25 @@ class SupportTicketsOrm(Base):
 
     supportAgent_id: Mapped[int | None] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
 
-    supportAgent: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id], viewonly=True)
+    supportAgent: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[supportAgent_id], viewonly=True)
 
     status: Mapped[str] = mapped_column(String())
+
+    messages: Mapped[list[int]] = mapped_column(ARRAY(Integer()))
+
+
+# Таблица с отзывами об Агентах Поддержки
+class SupportAgentsReviewsOrm(Base):
+    __tablename__ = 'supportAgentsReviews'
+
+    id: Mapped[int] = mapped_column(BigInteger(), primary_key=True, autoincrement=True)
+
+    supportAgent_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
+
+    supportAgent: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[supportAgent_id], viewonly=True)
+
+    supportTicket_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('supportTickets.id', ondelete='CASCADE'))
+
+    supportTicket: Mapped["SupportTicketsOrm"] = relationship("SupportTicketsOrm", foreign_keys=[supportTicket_id], viewonly=True)
+
+    evaluation: Mapped[int] = mapped_column(Integer())
