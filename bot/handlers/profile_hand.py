@@ -1,5 +1,5 @@
 from datetime import datetime
-from aiogram import types
+from aiogram import types, F
 from utils import profile_text
 from utils import text
 from InstanceBot import router, bot
@@ -12,6 +12,7 @@ from credit_card_checker import CreditCardChecker
 from database.models import PurchasedCoursesOrm
 from utils import cryptoPayment
 import asyncio
+import os
 
 # Отправка меню профиля
 async def send_profile(call: types.CallbackQuery) -> None:
@@ -253,13 +254,38 @@ async def click_confirmation_agree(call: types.CallbackQuery, state: FSMContext)
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
-    await call.message.answer(profile_text.profile_withDraw_agree_text)
+    data = await state.get_data()
+
+    if data["financeMethod"] == "replenish":
+        await bot.send_invoice(user_id,
+                            title="Пополнение средств",
+                            description="Пополнение средств с телеграмм бота на вашу банковскую карту",
+                            provider_token=os.getenv("PAYMASTER_API"),
+                            currency="rub",
+                            prices=[types.LabeledPrice(label="Пополнение средств", 
+                                                    amount=int(data["payment_summa"])*100)],
+                            start_parameter="replenish-payment",
+                            payload="replenish-payload")
+
+
+# Обработка платежа пользователя на пополнение баланса
+async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
+    await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
+
+
+# Платеж пользователя на пополнение баланса прошёл успешно
+async def successful_replenish(message: types.Message, state: FSMContext):
+    
+    await AsyncORM.change_user_balance(message.from_user.id, message.successful_payment.total_amount)
+
+    await bot.send_message(message.chat.id, profile_text.successful_replenish_text.format(message.successful_payment.total_amount))
 
     await state.set_state(None)
 
 
 # Отправка меню "Реферралы"
 async def send_referrals_menu(call: types.CallbackQuery, state: FSMContext) -> None:
+    
     user_id = call.from_user.id
     message_id = call.message.message_id
     bot_info = await bot.get_me()
@@ -370,3 +396,7 @@ def hand_add():
     router.callback_query.register(send_referrals_dynamics, lambda c: c.data == 'profile_referrals_menu|dynamics')
 
     router.callback_query.register(send_referrals_materials, lambda c: c.data == 'profile_referrals_menu|materials')
+
+    router.pre_checkout_query.register(pre_checkout_query)
+
+    router.message.register(successful_replenish, F.content_types == types.ContentType.SUCCESSFUL_PAYMENT)

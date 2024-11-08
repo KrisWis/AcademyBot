@@ -54,8 +54,6 @@ profile_confirmation_crypto_text = '''
 В RUB: {}
 В USDT: {}'''
 
-profile_withDraw_agree_text = 'чет бабки придут в течение суток'
-
 profile_withDraw_check_text = "Ваш чек на вывод доступен по кнопке ниже:"
 
 profile_withDraw_check_activated_text = "Средства успешно получены ✅"
@@ -98,3 +96,5 @@ profile_referrals_materials_text = '''
 Архив рекламных материалов, которые Вы можете использовать для продвижения своей реферальной ссылки.
 
 Бла-Бла-Бла фотки видео и там чет еще'''
+
+successful_replenish_text = 'Пополнение баланса на сумму {} RUB прошло успешно! ✅'
