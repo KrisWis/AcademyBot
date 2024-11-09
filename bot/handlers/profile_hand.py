@@ -102,6 +102,7 @@ async def send_profile_made_payment(message: types.Message, state: FSMContext):
 # Обработка подтверждения/отклонения оплаты на пополнение
 async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
     user_id = call.from_user.id
+    username = call.from_user.username
     temp = call.data.split('|')
     data = await state.get_data()
     message_id = call.message.message_id
@@ -126,8 +127,20 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
         await bot.delete_message(chat_id=user_id, message_id=message_id)
         
         await AsyncORM.change_user_balance(user_id, int(data["payment_summa"]))
-        
-        await call.message.answer(profile_text.profile_payment_success, reply_markup=types.ReplyKeyboardRemove())
+
+        user_referrer_id = await AsyncORM.get_user_referrer_id(user_id)
+
+        if user_referrer_id:
+
+            user_referrer_percent = await AsyncORM.get_user_ref_percent(user_referrer_id)
+
+            user_referrer_sum = int(int(data["payment_summa"]) * user_referrer_percent / 100)
+
+            await AsyncORM.change_user_balance(user_referrer_id, user_referrer_sum)
+            
+            await bot.send_message(user_referrer_id, profile_text.successful_referral_replenish_text.format(username, data["payment_summa"], user_referrer_sum))
+
+        await call.message.answer(profile_text.successful_replenish_text.format(data["payment_summa"]), reply_markup=types.ReplyKeyboardRemove())
 
         await state.set_state(None)
 
@@ -275,9 +288,26 @@ async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
 
 # Платеж пользователя на пополнение баланса прошёл успешно
 async def successful_replenish(message: types.Message, state: FSMContext):
+
+    user_id = message.from_user.id
+    username = message.from_user.username
+
+    data = await state.get_data()
     
     await AsyncORM.change_user_balance(message.from_user.id, message.successful_payment.total_amount)
 
+    user_referrer_id = await AsyncORM.get_user_referrer_id(user_id)
+
+    if user_referrer_id:
+
+        user_referrer_percent = await AsyncORM.get_user_ref_percent(user_referrer_id)
+
+        user_referrer_sum = int(int(data["payment_summa"]) * user_referrer_percent / 100)
+
+        await AsyncORM.change_user_balance(user_referrer_id, user_referrer_sum)
+        
+        await bot.send_message(user_referrer_id, profile_text.successful_referral_replenish_text.format(username, data["payment_summa"], user_referrer_sum))
+        
     await bot.send_message(message.chat.id, profile_text.successful_replenish_text.format(message.successful_payment.total_amount))
 
     await state.set_state(None)

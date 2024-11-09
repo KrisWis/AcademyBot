@@ -1,8 +1,8 @@
 from aiocryptopay import AioCryptoPay, Networks
 import os
 
-cryptopay = AioCryptoPay(os.getenv("CRYPTOPAY_API"), network=Networks.MAIN_NET)
-# cryptopay = AioCryptoPay(os.getenv("TEST_CRYPTOPAY_API"), network=Networks.TEST_NET)
+# cryptopay = AioCryptoPay(os.getenv("CRYPTOPAY_API"), network=Networks.MAIN_NET)
+cryptopay = AioCryptoPay(os.getenv("TEST_CRYPTOPAY_API"), network=Networks.TEST_NET)
 
 # Функция для конвертации суммы конкретной валюты в USD
 async def get_crypto_bot_sum(summa: float, currency: str):
@@ -17,7 +17,7 @@ async def get_crypto_bot_sum(summa: float, currency: str):
 
 # Функция для совершения оплаты
 async def create_crypto_bot_invoice(summa: float, currency: str):
-    amount = await get_crypto_bot_sum(summa, currency)
+    amount = await get_crypto_bot_sum(1, currency)
     invoice = await cryptopay.create_invoice(
         asset=currency,
         amount=amount

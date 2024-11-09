@@ -85,6 +85,20 @@ class AsyncORM:
 
             return referrals
         
+
+    # Получение реферрера пользователя по id пользователя
+    @staticmethod
+    async def get_user_referrer_id(user_id: int) -> int:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersRefsOrm.referrer_id).where(UsersRefsOrm.user_id == user_id)
+            )
+
+            referrer_id = result.scalar()
+
+            return referrer_id
+        
     
     # Получение всех купленных курсов реферралами пользователя по его id
     @staticmethod
@@ -97,6 +111,19 @@ class AsyncORM:
                 purchased_courses_arr.append(*user_referral.profile.purchased_courses)
 
         return purchased_courses_arr
+    
+
+    # Получение реферального процента пользователя
+    @staticmethod
+    async def get_user_ref_percent(user_id: int) -> int:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersRefsOrm.ref_percent).where(UsersRefsOrm.user_id == user_id)
+            )
+            user_ref_percent = result.scalar()
+
+            return user_ref_percent
     
 
     # Добавление тикета поддержки в базу данных
