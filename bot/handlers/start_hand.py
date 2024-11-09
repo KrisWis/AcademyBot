@@ -18,7 +18,11 @@ async def start(message: types.Message, state: FSMContext):
 
     data = await state.get_data()
 
-    formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    date_format = "%Y-%m-%d %H:%M:%S"
+
+    formatted_time = now.strftime(date_format)
+
+    formatted_time = datetime.datetime.strptime(formatted_time, date_format)
     
     if not await AsyncORM.get_user(user_id):
         referrer_id = message.text[7:] or None
@@ -45,7 +49,8 @@ async def start(message: types.Message, state: FSMContext):
         )
     
     user_status = await AsyncORM.get_user_status(user_id)
-    await message.answer_animation(caption=text.start_text, reply_markup=globalKeyboards.start_menu(user_status == const.supportAgent), 
+    await message.answer_animation(caption=text.start_text, 
+    reply_markup=globalKeyboards.start_menu(user_status), 
     animation='https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif')
 
     await state.set_state(None)

@@ -1,6 +1,6 @@
 from sqlalchemy import *
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from database.db import Base
+from database.db import Base, date
 from sqlalchemy.dialects.postgresql import ARRAY
 
 
@@ -12,7 +12,7 @@ class UsersOrm(Base):
     
     user_id: Mapped[int] = mapped_column(BigInteger(), primary_key=True, autoincrement=False)
     username: Mapped[str] = mapped_column(String())
-    user_reg_date: Mapped[str] = mapped_column(nullable=False)
+    user_reg_date: Mapped[date] = mapped_column(nullable=False)
     user_geo: Mapped[str] = mapped_column(String(), nullable=False)
 
     profile: Mapped["UsersProfileOrm"] = relationship("UsersProfileOrm", back_populates="user")
@@ -65,7 +65,7 @@ class PurchasedCoursesOrm(Base):
 
     purchased_course_name: Mapped[str] = mapped_column(String())
 
-    purchase_date: Mapped[str] = mapped_column(nullable=False)
+    purchase_date: Mapped[date] = mapped_column(nullable=False)
     
     price: Mapped[int] = mapped_column(Integer())
 
@@ -106,3 +106,33 @@ class SupportAgentsReviewsOrm(Base):
     supportTicket: Mapped["SupportTicketsOrm"] = relationship("SupportTicketsOrm", foreign_keys=[supportTicket_id], viewonly=True)
 
     evaluation: Mapped[int] = mapped_column(Integer())
+
+
+# Таблица с данными о пополнении счёта пользователями
+class UsersReplenishBalanceOrm(Base):
+    __tablename__ = 'usersReplenishBalance'
+
+    id: Mapped[int] = mapped_column(BigInteger(), primary_key=True, autoincrement=True)
+
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
+
+    user: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id], viewonly=True)
+
+    replenish_sum: Mapped[int] = mapped_column(Integer())
+
+    replenish_date: Mapped[date] = mapped_column(nullable=False)
+
+
+# Таблица с данными о выводе со счёта пользователями
+class UsersWithdrawBalanceOrm(Base):
+    __tablename__ = 'usersWithdrawBalance'
+
+    id: Mapped[int] = mapped_column(BigInteger(), primary_key=True, autoincrement=True)
+
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
+
+    user: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id], viewonly=True)
+
+    withdraw_sum: Mapped[int] = mapped_column(Integer())
+
+    withdraw_date: Mapped[date] = mapped_column(nullable=False)

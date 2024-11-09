@@ -1,1 +1,1 @@
-from keyboards import profileKeyboards, globalKeyboards, faqKeyboards, supportKeyboards
+from keyboards import profileKeyboards, globalKeyboards, faqKeyboards, supportKeyboards, leaderKeyboards

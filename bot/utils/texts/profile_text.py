@@ -54,7 +54,11 @@ profile_confirmation_crypto_text = '''
 В RUB: {}
 В USDT: {}'''
 
-profile_withDraw_check_text = "Ваш чек на вывод доступен по кнопке ниже:"
+profile_withDraw_check_text = """
+С вашего баланса списано {} RUB!
+
+Ваш чек на вывод доступен по кнопке ниже:
+"""
 
 profile_withDraw_check_activated_text = "Средства успешно получены ✅"
 

@@ -4,6 +4,8 @@ from InstanceBot import bot
 from aiogram.fsm.context import FSMContext
 from utils import text
 from keyboards import globalKeyboards
+from database.orm import AsyncORM
+
 
 # Отправка стартового меню
 async def start_menu(call: types.CallbackQuery, state: FSMContext):
@@ -12,11 +14,14 @@ async def start_menu(call: types.CallbackQuery, state: FSMContext):
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
+    user_status = await AsyncORM.get_user_status(user_id)
+
     await call.message.answer_animation(caption=text.start_text, 
-    reply_markup=globalKeyboards.start_menu(), 
+    reply_markup=globalKeyboards.start_menu(user_status), 
     animation='https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif')
 
     await state.set_state(None)
+
 
 # Отправка сообщения об отмене операции
 async def cancel_operation(call: types.CallbackQuery, state: FSMContext):
@@ -28,6 +33,7 @@ async def cancel_operation(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(text.cancel_operation, reply_markup=globalKeyboards.cancel_operation())
 
     await state.set_state(None)
+
 
 def hand_add():
     router.callback_query.register(start_menu, lambda c: c.data == 'start_menu')

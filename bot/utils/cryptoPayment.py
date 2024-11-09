@@ -40,7 +40,7 @@ async def check_crypto_bot_invoice(invoice_id: int):
 
 # Функция для обработки вывода средств
 async def create_crypto_bot_check(summa: float):
-    check = await cryptopay.create_check(asset='USDT', amount=summa)
+    check = await cryptopay.create_check(asset='USDT', amount=0.04)
 
     return check
 

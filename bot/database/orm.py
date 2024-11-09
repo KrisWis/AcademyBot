@@ -1,8 +1,10 @@
 from sqlalchemy import *
-from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm, SupportTicketsOrm, SupportAgentsReviewsOrm
+from database.models import UsersOrm, UsersProfileOrm, UsersRefsOrm, PurchasedCoursesOrm, SupportTicketsOrm, SupportAgentsReviewsOrm, UsersReplenishBalanceOrm, UsersWithdrawBalanceOrm
 from database.db import Base, engine, async_session, date
 from sqlalchemy.orm import joinedload
 from utils import const
+from datetime import datetime, timedelta
+import os
 
 # Создаём класс для ORM
 class AsyncORM:
@@ -19,6 +21,7 @@ class AsyncORM:
             await conn.run_sync(Base.metadata.create_all)
             engine.echo = True
 
+
     # Получение пользователя по id
     @staticmethod
     async def get_user(user_id: int) -> UsersOrm:
@@ -28,6 +31,144 @@ class AsyncORM:
 
             return result
         
+
+    # Получение пользователей по параметрам
+    @staticmethod
+    async def get_users(period: str = None, geo: str = None) -> list[UsersOrm] | str:
+        
+        now = datetime.now()
+        date = now - timedelta(weeks=100000)
+
+        if period == 'day':
+            date = now - timedelta(hours=1)
+
+        if period == 'week':
+            week = now - timedelta(weeks=1)
+            date = week
+
+        if period == 'month':
+            month = now - timedelta(days=30)
+            date = month
+        
+        async with async_session() as session:
+
+            if geo:
+                result = await session.execute(
+                    select(UsersProfileOrm)
+                )
+                users = result.scalars().all()
+
+                stmt = select(UsersOrm.user_geo, func.count(UsersOrm.user_id)) \
+                    .select_from(UsersOrm) \
+                    .where(UsersOrm.user_reg_date >= date) \
+                    .group_by(UsersOrm.user_geo) \
+                    .order_by(func.count(UsersOrm.user_id).desc()) \
+                    .limit(10) \
+                    .distinct()
+
+                result = await session.execute(stmt)
+                name = result.all()
+
+                count_geo = {}
+                for country in name:
+                    count_geo[country[0]] = int(country[1])
+
+                msg = ''
+                for i in count_geo:
+                    msg += f'{i}: {count_geo[i]} ' \
+                        f'({round(count_geo[i] / len(await AsyncORM.get_users(period=period)) * 100, 2)}%)\n'
+
+                return msg if msg else 'Не обнаружено'
+
+            else:
+                result = await session.execute(
+                    select(UsersOrm).where(UsersOrm.user_reg_date >= date).options(joinedload(UsersOrm.profile).selectinload(UsersProfileOrm.purchased_courses)))
+                users = result.scalars().all()
+                
+                return users
+            
+
+    # Получение информации о купленных курсов по параметрам
+    @staticmethod
+    async def get_purchased_courses(period: str = None) -> list[PurchasedCoursesOrm] | str:
+        
+        now = datetime.now()
+        date = now - timedelta(weeks=100000)
+
+        if period == 'day':
+            date = now - timedelta(hours=1)
+
+        if period == 'week':
+            week = now - timedelta(weeks=1)
+            date = week
+
+        if period == 'month':
+            month = now - timedelta(days=30)
+            date = month
+        
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(PurchasedCoursesOrm).where(PurchasedCoursesOrm.purchase_date >= date))
+            users = result.scalars().all()
+            
+            return users
+        
+
+    # Получение общей суммы пополнения баланса пользователями за определённый период
+    @staticmethod
+    async def get_replenishBalances_sum(period: str = None) -> int:
+        
+        now = datetime.now()
+        date = now - timedelta(weeks=100000)
+
+        if period == 'day':
+            date = now - timedelta(hours=1)
+
+        if period == 'week':
+            week = now - timedelta(weeks=1)
+            date = week
+
+        if period == 'month':
+            month = now - timedelta(days=30)
+            date = month
+        
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersReplenishBalanceOrm.replenish_sum).where(UsersReplenishBalanceOrm.replenish_date >= date))
+            users = result.scalars().all()
+            
+            return sum(users)
+        
+
+    # Получение общей суммы вывода с баланса пользователями за определённый период
+    @staticmethod
+    async def get_withdrawBalances_sum(period: str = None) -> int:
+        
+        now = datetime.now()
+        date = now - timedelta(weeks=100000)
+
+        if period == 'day':
+            date = now - timedelta(hours=1)
+
+        if period == 'week':
+            week = now - timedelta(weeks=1)
+            date = week
+
+        if period == 'month':
+            month = now - timedelta(days=30)
+            date = month
+        
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersWithdrawBalanceOrm.withdraw_sum).where(UsersWithdrawBalanceOrm.withdraw_date >= date))
+            users = result.scalars().all()
+            
+            return sum(users)
+            
+        
     # Добавление пользователя в базу данных
     @staticmethod
     async def add_user(user_id: int, username: str, user_reg_date: date, user_geo: str,
@@ -35,9 +176,14 @@ class AsyncORM:
 
         user = await AsyncORM.get_user(user_id=user_id)
 
+        user_default_status = const.student
+
+        if user_id == int(os.getenv("leader_id")):
+            user_default_status = const.leader
+
         if not user:
             user = UsersOrm(user_id=user_id, username=username, user_reg_date=user_reg_date, user_geo=user_geo)
-            user_profile = UsersProfileOrm(user_id=user_id, status=const.supportAgent,
+            user_profile = UsersProfileOrm(user_id=user_id, status=user_default_status,
             completed_courses=[], purchased_courses=[], balance=0)
             user_refInfo = UsersRefsOrm(user_id=user_id, referrer_id=referrer_id, ref_percent=20)
             
@@ -126,7 +272,7 @@ class AsyncORM:
             return user_ref_percent
     
 
-    # Добавление тикета поддержки в базу данных
+    # Добавление тикета поддержки
     @staticmethod
     async def add_supportTicket(user_id: int, text: str) -> bool:
 
@@ -134,6 +280,34 @@ class AsyncORM:
 
         async with async_session() as session:
             session.add(supportTicket)
+
+            await session.commit() 
+            
+        return True
+    
+
+    # Добавление информации о пополнении баланса
+    @staticmethod
+    async def add_replenishBalance_info(user_id: int, sum: int, date: Date) -> bool:
+
+        replenishBalance_info = UsersReplenishBalanceOrm(user_id=user_id, replenish_sum=sum, replenish_date=date)
+
+        async with async_session() as session:
+            session.add(replenishBalance_info)
+
+            await session.commit() 
+            
+        return True
+    
+
+    # Добавление информации о выводе с баланса
+    @staticmethod
+    async def add_withdrawBalance_info(user_id: int, sum: int, date: Date) -> bool:
+
+        withdrawBalance_info = UsersWithdrawBalanceOrm(user_id=user_id, withdraw_sum=sum, withdraw_date=date)
+
+        async with async_session() as session:
+            session.add(withdrawBalance_info)
 
             await session.commit() 
             

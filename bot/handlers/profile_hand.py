@@ -128,6 +128,8 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
         
         await AsyncORM.change_user_balance(user_id, int(data["payment_summa"]))
 
+        await AsyncORM.add_replenishBalance_info(user_id, int(data["payment_summa"]), datetime.now())
+
         user_referrer_id = await AsyncORM.get_user_referrer_id(user_id)
 
         if user_referrer_id:
@@ -215,9 +217,11 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
         try:
             check = await cryptoPayment.create_crypto_bot_check(sumofWithdraw)
             
-            message_id = await message.answer(profile_text.profile_withDraw_check_text, reply_markup=profileKeyboards.send_check_url_kb(check.bot_check_url))
+            message_id = await message.answer(profile_text.profile_withDraw_check_text.format(sumofWithdraw), reply_markup=profileKeyboards.send_check_url_kb(check.bot_check_url))
             
             await AsyncORM.change_user_balance(user_id, -sumofWithdraw)
+
+            await AsyncORM.add_withdrawBalance_info(user_id, sumofWithdraw, datetime.now())
             
             while True:
                 await asyncio.sleep(30)
@@ -295,6 +299,8 @@ async def successful_replenish(message: types.Message, state: FSMContext):
     data = await state.get_data()
     
     await AsyncORM.change_user_balance(message.from_user.id, message.successful_payment.total_amount)
+    
+    await AsyncORM.add_replenishBalance_info(user_id, message.successful_payment.total_amount, datetime.now())
 
     user_referrer_id = await AsyncORM.get_user_referrer_id(user_id)
 
@@ -356,22 +362,9 @@ async def send_referrals_dynamics(call: types.CallbackQuery) -> None:
     conversionPercent = len(user_referrals_purchased_courses) / len(user_referrals) * 100
 
     # Получаем курсы, которые были куплены сегодня/в этом месяце/за всё время и потом цену каждого из них присваиваем для константы
-    user_referrals_purchased_today_courses: list[PurchasedCoursesOrm] = []
-    user_referrals_purchased_thisMonth_courses: list[PurchasedCoursesOrm] = []
-    user_referrals_purchased_allTime_courses: list[PurchasedCoursesOrm] = []
-
-    for user_referrals_purchased_course in user_referrals_purchased_courses:
-        formatted_purchased_date = datetime.strptime(user_referrals_purchased_course.purchase_date, "%Y-%m-%d %H:%M:%S")
-        now = datetime.now()
-
-        if formatted_purchased_date.date() == now.date():
-            user_referrals_purchased_today_courses.append(user_referrals_purchased_course)
-            user_referrals_purchased_thisMonth_courses.append(user_referrals_purchased_course)
-
-        elif formatted_purchased_date.month == now.month:
-            user_referrals_purchased_thisMonth_courses.append(user_referrals_purchased_course)
-
-        user_referrals_purchased_allTime_courses.append(user_referrals_purchased_course)
+    user_referrals_purchased_today_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('day')
+    user_referrals_purchased_thisMonth_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('month')
+    user_referrals_purchased_allTime_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses()
 
     user_referrals_purchased_today_courses_totalPrice = user_referrals_purchased_today_courses.reduce(
         lambda acc, purchasedCourse: acc + purchasedCourse.price, 0)
