@@ -5,7 +5,9 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 def leader_menu_kb():
     kb = InlineKeyboardMarkup(row_width=4, inline_keyboard=[
         [InlineKeyboardButton(text='📊 Статистика', callback_data='leader_menu|stats')],
-        [InlineKeyboardButton(text='👨‍💻 Просмотреть тикет', callback_data='leader_menu|supportTicket')]])
+        [InlineKeyboardButton(text='👨‍💻 Просмотреть тикет', callback_data='leader_menu|supportTicket')],
+        [InlineKeyboardButton(text='💲 Изменить баланс', callback_data='leader_menu|changeBalance')],
+        [InlineKeyboardButton(text='👤 Изменить статус', callback_data='leader_menu|changeStatus')]])
     
     return kb
 

@@ -1,6 +1,6 @@
 from aiogram import types
 from InstanceBot import router, bot
-from utils import leader_text
+from utils import leader_text, text
 from keyboards import leaderKeyboards
 from database.orm import AsyncORM
 from aiogram.filters import Command, StateFilter
@@ -133,21 +133,94 @@ async def send_messages_of_supportTicket(message: types.Message, state: FSMConte
 
             return
 
-
     await message.answer(
         text=leader_text.send_supportTicketID_error_text,
     )
     
+
+# Отправка сообщения для отправки username пользователя для изменения его баланса
+async def wait_username_for_changeBalance(call: types.CallbackQuery, state: FSMContext) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    await call.message.answer(
+        text=leader_text.send_username_for_changeBalance_text,
+    )
+
+    await state.set_state(LeaderMenuStates.write_username_for_changeBalance)
+
+
+# Отправка сообщения с текущим балансом пользователя
+async def send_currentUserBalance(message: types.Message, state: FSMContext) -> None:
+    user_id = message.from_user.id
+    message_id = message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
+
+    user_username = message.text[1:]
+
+    await state.update_data(user_username=user_username)
+
+    try:
+        user = await AsyncORM.get_user_by_username(username=user_username)
+
+        await message.answer(
+            text=leader_text.send_currentUserBalance_text.format(user_username, user.profile.balance),
+        )
+
+        await state.set_state(LeaderMenuStates.write_newBalance_for_changeBalance)
+    
+    except:
+        await message.answer(text.user_notFound_error_text)
+
+
+# Отправка сообщения с информацией о изменении баланса пользователя
+async def change_userBalance(message: types.Message, state: FSMContext) -> None:
+    user_id = message.from_user.id
+    message_id = message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
+
+    try:
+        new_balance = int(message.text)
+
+        data = await state.get_data()
+
+        user = await AsyncORM.get_user_by_username(username=data["user_username"])
+
+        user_currentBalance = user.profile.balance
+
+        await AsyncORM.change_user_balance(user.user_id, new_balance, True)
+
+        await message.answer(
+            text=leader_text.change_userBalance_success_text.format(data["user_username"], user_currentBalance, new_balance),
+        )
+
+        await bot.send_message(chat_id=user.user_id, text=leader_text.send_user_changeBalance_text.format(user_currentBalance, new_balance))
+
+        await state.set_state(None)
+    
+    except:
+        await message.answer(text.invalid_data_text)
+
 
 def hand_add():
     router.message.register(leader_menu, StateFilter("*"), Command("leader_menu"))
 
     router.message.register(send_messages_of_supportTicket, StateFilter(LeaderMenuStates.write_supportTicket_id))
 
+    router.message.register(send_currentUserBalance, StateFilter(LeaderMenuStates.write_username_for_changeBalance))
+
+    router.message.register(change_userBalance, StateFilter(LeaderMenuStates.write_newBalance_for_changeBalance))
+
     router.callback_query.register(call_leader_menu, lambda c: c.data == 'leader_menu')
 
     router.callback_query.register(send_stats_selection, lambda c: c.data == 'leader_menu|stats')
 
     router.callback_query.register(wait_supportTicket_id, lambda c: c.data == 'leader_menu|supportTicket')
+
+    router.callback_query.register(wait_username_for_changeBalance, lambda c: c.data == 'leader_menu|changeBalance')
 
     router.callback_query.register(send_stats, lambda c: c.data.startswith('stats'))

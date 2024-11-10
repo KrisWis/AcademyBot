@@ -45,3 +45,15 @@ sending_supportTicket_user_start_message_text = """
 
 <i>{}</i>
 """
+
+send_username_for_changeBalance_text = 'Напишите username пользователя, которому вы хотите изменить баланс ✍️'
+
+send_currentUserBalance_text = '''
+Текущий баланс пользователя @{}: {} RUB.
+
+Напишите новый баланс для пользователя числом ✍️
+'''
+
+change_userBalance_success_text = 'Баланс пользователя @{} успешно изменён с <i>{} -> {} RUB</i>! ✅'
+
+send_user_changeBalance_text = 'Ваш баланс изменён Руководителем с <i>{} -> {} RUB</i>!'

@@ -32,6 +32,20 @@ class AsyncORM:
             return result
         
 
+    # Получение пользователя по username
+    @staticmethod
+    async def get_user_by_username(username: str) -> UsersOrm:
+        async with async_session() as session:
+
+            result = await session.execute(
+                select(UsersOrm).where(UsersOrm.username == username).options(joinedload(UsersOrm.profile))
+            )
+
+            user = result.scalar()
+
+            return user
+        
+
     # Получение пользователей по параметрам
     @staticmethod
     async def get_users(period: str = None, geo: str = None) -> list[UsersOrm] | str:
@@ -390,13 +404,18 @@ class AsyncORM:
 
     # Изменение баланса пользователя
     @staticmethod
-    async def change_user_balance(user_id: int, amount: int) -> bool:
+    async def change_user_balance(user_id: int, amount: int, full_replacement: bool = False) -> bool:
         past_balance = await AsyncORM.get_balance(user_id)
 
         async with async_session() as session:
-            stmt = (update(UsersProfileOrm)
-                    .where(UsersProfileOrm.user_id == user_id)
-                    .values(balance=past_balance + amount))
+            if not full_replacement:
+                stmt = (update(UsersProfileOrm)
+                        .where(UsersProfileOrm.user_id == user_id)
+                        .values(balance=past_balance + amount))
+            else:
+                stmt = (update(UsersProfileOrm)
+                        .where(UsersProfileOrm.user_id == user_id)
+                        .values(balance=amount))
             
             await session.execute(stmt)
             await session.commit()
