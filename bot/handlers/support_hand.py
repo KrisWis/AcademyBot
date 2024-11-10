@@ -174,17 +174,17 @@ async def send_user_answer_for_supportTicket(message: types.Message, state: FSMC
 
     data = await state.get_data()
 
-    supportAgent_answer_text = message.text
+    user_answer_text = message.text
 
     supportTicket_id = data["answer_supportTicket_id"]
 
-    await AsyncORM.add_message_for_supportTicket(supportTicket_id, supportAgent_answer_text)
+    await AsyncORM.add_message_for_supportTicket(supportTicket_id, user_answer_text)
 
     supportTicket = await AsyncORM.get_supportTicket(supportTicket_id)
 
     try:
         await bot.send_message(chat_id=supportTicket.supportAgent_id, 
-                text=support_text.user_answer_supportTicket_text.format(username, supportTicket_id, supportAgent_answer_text), 
+                text=support_text.user_answer_supportTicket_text.format(username, supportTicket_id, user_answer_text), 
                 reply_markup=supportKeyboards.supportAgent_answer_to_supportTicket_kb(supportTicket_id))
         
         await message.answer(support_text.send_answer_to_supportAgent_for_supportTicket_success_text)

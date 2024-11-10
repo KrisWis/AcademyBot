@@ -7,7 +7,6 @@ from database.orm import AsyncORM
 from aiogram.fsm.context import FSMContext
 from filters import Sub
 from keyboards import globalKeyboards
-from utils import const
 
 
 # Отправка стартового меню при вводе "/start"

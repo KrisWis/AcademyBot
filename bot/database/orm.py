@@ -76,7 +76,7 @@ class AsyncORM:
                 msg = ''
                 for i in count_geo:
                     msg += f'{i}: {count_geo[i]} ' \
-                        f'({round(count_geo[i] / len(await AsyncORM.get_users(period=period)) * 100, 2)}%)\n'
+                        f'({round(count_geo[i] / len(await AsyncORM.get_users(period=period)) * 100, 2)}%)'
 
                 return msg if msg else 'Не обнаружено'
 
@@ -180,6 +180,9 @@ class AsyncORM:
 
         if user_id == int(os.getenv("leader_id")):
             user_default_status = const.leader
+
+        elif user_id == int(os.getenv("developer_id")):
+            user_default_status = const.developer
 
         if not user:
             user = UsersOrm(user_id=user_id, username=username, user_reg_date=user_reg_date, user_geo=user_geo)
@@ -435,7 +438,11 @@ class AsyncORM:
             result = await session.execute(select(SupportTicketsOrm).where(SupportTicketsOrm.id == supportTicket_id))
             supportTicket: SupportTicketsOrm = result.scalar()
 
-            supportTicket.messages.append(message_text)
+            messages = supportTicket.messages
+
+            messages.append(message_text)
+
+            supportTicket.messages = [*messages, ""]
 
             await session.commit()
                 

@@ -88,7 +88,7 @@ class SupportTicketsOrm(Base):
 
     status: Mapped[str] = mapped_column(String())
 
-    messages: Mapped[list[int]] = mapped_column(ARRAY(Integer()))
+    messages: Mapped[list[str]] = mapped_column(ARRAY(String()))
 
 
 # Таблица с отзывами об Агентах Поддержки
