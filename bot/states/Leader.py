@@ -8,3 +8,5 @@ class LeaderMenuStates(StatesGroup):
     write_username_for_changeBalance = State()
 
     write_newBalance_for_changeBalance = State()
+
+    write_username_for_changeStatus = State()

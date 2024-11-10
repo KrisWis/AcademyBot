@@ -15,7 +15,7 @@ async def leader_menu(message: types.Message, state: FSMContext):
 
     user_status = await AsyncORM.get_user_status(user_id)
 
-    if user_status in [const.leader, const.developer]:
+    if user_status in [const.statuses["leader"], const.statuses["developer"]]:
         await message.answer(leader_text.leader_menu_text, 
         reply_markup=leaderKeyboards.leader_menu_kb())
 
@@ -31,7 +31,7 @@ async def call_leader_menu(call: types.CallbackQuery, state: FSMContext):
 
     user_status = await AsyncORM.get_user_status(user_id)
 
-    if user_status in [const.leader, const.developer]:
+    if user_status in [const.statuses["leader"], const.statuses["developer"]]:
         await call.message.answer(leader_text.leader_menu_text, 
         reply_markup=leaderKeyboards.leader_menu_kb())
 
@@ -159,15 +159,15 @@ async def send_currentUserBalance(message: types.Message, state: FSMContext) -> 
 
     await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
 
-    user_username = message.text[1:]
+    user_username_for_change = message.text[1:]
 
-    await state.update_data(user_username=user_username)
+    await state.update_data(user_username_for_change=user_username_for_change)
 
     try:
-        user = await AsyncORM.get_user_by_username(username=user_username)
+        user = await AsyncORM.get_user_by_username(username=user_username_for_change)
 
         await message.answer(
-            text=leader_text.send_currentUserBalance_text.format(user_username, user.profile.balance),
+            text=leader_text.send_currentUserBalance_text.format(user_username_for_change, user.profile.balance),
         )
 
         await state.set_state(LeaderMenuStates.write_newBalance_for_changeBalance)
@@ -188,14 +188,14 @@ async def change_userBalance(message: types.Message, state: FSMContext) -> None:
 
         data = await state.get_data()
 
-        user = await AsyncORM.get_user_by_username(username=data["user_username"])
+        user = await AsyncORM.get_user_by_username(username=data["user_username_for_change"])
 
         user_currentBalance = user.profile.balance
 
         await AsyncORM.change_user_balance(user.user_id, new_balance, True)
 
         await message.answer(
-            text=leader_text.change_userBalance_success_text.format(data["user_username"], user_currentBalance, new_balance),
+            text=leader_text.change_userBalance_success_text.format(data["user_username_for_change"], user_currentBalance, new_balance),
         )
 
         await bot.send_message(chat_id=user.user_id, text=leader_text.send_user_changeBalance_text.format(user_currentBalance, new_balance))
@@ -204,6 +204,72 @@ async def change_userBalance(message: types.Message, state: FSMContext) -> None:
     
     except:
         await message.answer(text.invalid_data_text)
+
+
+# Отправка сообщения для отправки username пользователя для изменения его статуса
+async def wait_username_for_changeStatus(call: types.CallbackQuery, state: FSMContext) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    await call.message.answer(
+        text=leader_text.send_username_for_changeStatus_text,
+    )
+
+    await state.set_state(LeaderMenuStates.write_username_for_changeStatus)
+
+
+# Отправка сообщения с текущим статусом пользователя и возможностью его изменения
+async def send_currentUserStatus(message: types.Message, state: FSMContext) -> None:
+    user_id = message.from_user.id
+    message_id = message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
+
+    user_username_for_change = message.text[1:]
+
+    await state.update_data(user_username_for_change=user_username_for_change)
+
+    try:
+        user = await AsyncORM.get_user_by_username(username=user_username_for_change)
+
+        await message.answer(
+            text=leader_text.send_currentUserStatus_text
+            .format(user_username_for_change, user.profile.status),
+            reply_markup=leaderKeyboards.change_user_status_kb()
+        )
+    
+    except:
+        await message.answer(text.user_notFound_error_text)
+
+
+# Отправка сообщения с информацией о изменении статуса пользователя
+async def change_userStatus(call: types.CallbackQuery, state: FSMContext) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    data = await state.get_data()
+
+    user = await AsyncORM.get_user_by_username(username=data["user_username_for_change"])
+
+    user_currentStatus = user.profile.status
+
+    temp = call.data.split("|")
+
+    user_futureStatus = const.statuses[temp[1]]
+
+    await AsyncORM.change_user_status(user.user_id, user_futureStatus)
+
+    await call.message.answer(
+        text=leader_text.change_userStatus_success_text.format(data["user_username_for_change"], user_currentStatus, user_futureStatus),
+    )
+
+    await bot.send_message(chat_id=user.user_id, text=leader_text.send_user_changeStatus_text.format(user_currentStatus, user_futureStatus))
+
+    await state.set_state(None)
 
 
 def hand_add():
@@ -215,6 +281,8 @@ def hand_add():
 
     router.message.register(change_userBalance, StateFilter(LeaderMenuStates.write_newBalance_for_changeBalance))
 
+    router.message.register(send_currentUserStatus, StateFilter(LeaderMenuStates.write_username_for_changeStatus))
+
     router.callback_query.register(call_leader_menu, lambda c: c.data == 'leader_menu')
 
     router.callback_query.register(send_stats_selection, lambda c: c.data == 'leader_menu|stats')
@@ -222,5 +290,9 @@ def hand_add():
     router.callback_query.register(wait_supportTicket_id, lambda c: c.data == 'leader_menu|supportTicket')
 
     router.callback_query.register(wait_username_for_changeBalance, lambda c: c.data == 'leader_menu|changeBalance')
+
+    router.callback_query.register(wait_username_for_changeStatus, lambda c: c.data == 'leader_menu|changeStatus')
+
+    router.callback_query.register(change_userStatus, lambda c: c.data.startswith('changeStatus'))
 
     router.callback_query.register(send_stats, lambda c: c.data.startswith('stats'))

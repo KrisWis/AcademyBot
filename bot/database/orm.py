@@ -190,13 +190,13 @@ class AsyncORM:
 
         user = await AsyncORM.get_user(user_id=user_id)
 
-        user_default_status = const.student
+        user_default_status = const.statuses["student"]
 
         if user_id == int(os.getenv("leader_id")):
-            user_default_status = const.leader
+            user_default_status = const.statuses["leader"]
 
         elif user_id == int(os.getenv("developer_id")):
-            user_default_status = const.developer
+            user_default_status = const.statuses["developer"]
 
         if not user:
             user = UsersOrm(user_id=user_id, username=username, user_reg_date=user_reg_date, user_geo=user_geo)
@@ -416,6 +416,19 @@ class AsyncORM:
                 stmt = (update(UsersProfileOrm)
                         .where(UsersProfileOrm.user_id == user_id)
                         .values(balance=amount))
+            
+            await session.execute(stmt)
+            await session.commit()
+            return True
+        
+
+    # Изменение статуса пользователя
+    @staticmethod
+    async def change_user_status(user_id: int, status: str) -> bool:
+        async with async_session() as session:
+            stmt = (update(UsersProfileOrm)
+                    .where(UsersProfileOrm.user_id == user_id)
+                    .values(status=status))
             
             await session.execute(stmt)
             await session.commit()

@@ -1,5 +1,8 @@
-student = "Ученик"
-supportAgent = "Агент поддержки"
-manager = "Менеджер"
-developer = "Разработчик"
-leader = "Руководитель"
+statuses = {
+    "student": "Ученик",
+    "supportAgent": "Агент поддержки",
+    "manager": "Менеджер",
+    "partner": "Партнёр",
+    "developer": "Разработчик",
+    "leader": "Руководитель",
+}

@@ -10,7 +10,7 @@ def start_menu(user_status: str):
     [InlineKeyboardButton(text='❓ FAQ', callback_data='start|faq'), 
     InlineKeyboardButton(text='👨‍💻 Поддержка', callback_data='start|support')]])
 
-    if (user_status in [const.supportAgent, const.leader, const.developer]):
+    if (user_status in [const.statuses["supportAgent"], const.statuses["leader"], const.statuses["developer"]]):
         kb.inline_keyboard.append([InlineKeyboardButton(text='📨 Активные тикеты', callback_data='start|supportTickets')])
 
     return kb
