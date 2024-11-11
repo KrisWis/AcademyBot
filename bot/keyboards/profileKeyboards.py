@@ -1,4 +1,5 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from utils.const import statuses
 
 # Клавиатура с меню профиля
 def profile_menu():
@@ -58,12 +59,21 @@ def profile_choose_withdraw_menu():
 
 
 # Клавиатура с меню "Рефералы"
-def profile_referrals_menu():
-    kb = InlineKeyboardMarkup(row_width=1, 
-    inline_keyboard=[
-    [InlineKeyboardButton(text='📊 Статистика', callback_data='profile_referrals_menu|dynamics'),
-    InlineKeyboardButton(text='📁 Материалы', callback_data='profile_referrals_menu|materials')],
-    [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
+def profile_referrals_menu(user_status: str):
+
+    if (user_status == statuses["manager"]):
+        kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+        [InlineKeyboardButton(text='📊 Статистика', callback_data='profile_referrals_menu|dynamics'),
+        InlineKeyboardButton(text='📁 Материалы', callback_data='profile_referrals_menu|materials')],
+        [InlineKeyboardButton(text='👥 Все реферралы', callback_data='profile_referrals_menu|referrals')]
+        [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
+    else:
+        kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+        [InlineKeyboardButton(text='📊 Статистика', callback_data='profile_referrals_menu|dynamics'),
+        InlineKeyboardButton(text='📁 Материалы', callback_data='profile_referrals_menu|materials')],
+        [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
 
     return kb
 

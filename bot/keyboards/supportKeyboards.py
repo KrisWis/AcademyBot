@@ -28,6 +28,8 @@ def supportTickets_kb(supportTickets: list[SupportTicketsOrm], current_page_inde
 
     inline_keyboard.append(action_kb_buttons)
 
+    inline_keyboard.append([InlineKeyboardButton(text="↩️ Назад", callback_data="start_menu")])
+
     kb = InlineKeyboardMarkup(
     inline_keyboard=inline_keyboard)
 

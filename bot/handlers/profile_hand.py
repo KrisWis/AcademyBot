@@ -13,6 +13,7 @@ from database.models import PurchasedCoursesOrm
 from utils import cryptoPayment
 import asyncio
 import os
+from utils.const import statuses
 
 # Отправка меню профиля
 async def send_profile(call: types.CallbackQuery) -> None:
@@ -23,12 +24,16 @@ async def send_profile(call: types.CallbackQuery) -> None:
 
     profile_info = await AsyncORM.get_profile_info(user_id)
 
-    print(profile_info)
-
-    await call.message.answer(profile_text.profile_text.
-    format(profile_info.status, profile_info.user.user_reg_date, 
-    len(profile_info.completed_courses), ";\n".join(profile_info.completed_courses), profile_info.balance), 
-    reply_markup=profileKeyboards.profile_menu())
+    if profile_info.status == statuses["partner"]:
+        await call.message.answer(profile_text.partner_profile_text.
+        format(profile_info.user.user_reg_date, 
+        len(profile_info.completed_courses), ";\n".join(profile_info.completed_courses), profile_info.balance), 
+        reply_markup=profileKeyboards.profile_menu())
+    else:
+        await call.message.answer(profile_text.profile_text.
+        format(profile_info.status, profile_info.user.user_reg_date, 
+        len(profile_info.completed_courses), ";\n".join(profile_info.completed_courses), profile_info.balance), 
+        reply_markup=profileKeyboards.profile_menu())
     
 
 # Отправка меню выбора способа оплаты
@@ -329,8 +334,10 @@ async def send_referrals_menu(call: types.CallbackQuery, state: FSMContext) -> N
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
+    user_status = await AsyncORM.get_user_status(user_id)
+
     await call.message.answer(profile_text.profile_referrals_menu_text.
-    format(f'https://t.me/{bot_username}?start={user_id}'), reply_markup=profileKeyboards.profile_referrals_menu())
+    format(f'https://t.me/{bot_username}?start={user_id}'), reply_markup=profileKeyboards.profile_referrals_menu(user_status))
 
 
 # Отправка сообщения с динамикой и статистикой реферралов пользователя
