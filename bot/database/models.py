@@ -48,6 +48,7 @@ class UsersRefsOrm(Base):
     profile_user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('usersProfiles.user_id', ondelete='CASCADE'), primary_key=True)
 
     referrer_id: Mapped[int | None] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
+    
     referrer: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[referrer_id])
 
     ref_percent: Mapped[int] = mapped_column(Integer())
