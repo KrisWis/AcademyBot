@@ -45,7 +45,7 @@ class UsersProfileOrm(Base):
 class UsersRefsOrm(Base):
     __tablename__ = 'usersRefs'
 
-    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('usersProfiles.user_id', ondelete='CASCADE'), primary_key=True)
+    profile_user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('usersProfiles.user_id', ondelete='CASCADE'), primary_key=True)
 
     referrer_id: Mapped[int | None] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'))
     referrer: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[referrer_id])
@@ -54,6 +54,10 @@ class UsersRefsOrm(Base):
 
     profile: Mapped["UsersProfileOrm"] = relationship("UsersProfileOrm", back_populates="refInfo")
     
+    user_id: Mapped[int] = mapped_column(BigInteger(), ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True)
+
+    user: Mapped["UsersOrm"] = relationship("UsersOrm", foreign_keys=[user_id], viewonly=True)
+
 
 # Таблица с данными о купленных курсах
 class PurchasedCoursesOrm(Base):

@@ -34,7 +34,7 @@ async def start(message: types.Message, state: FSMContext):
 
                 await bot.send_message(
                     chat_id=referrer_id,
-                    text=text.new_referral_text.format(username)
+                    text=text.new_referal_text.format(username)
                 )
 
                 referrer_id = int(referrer_id)  

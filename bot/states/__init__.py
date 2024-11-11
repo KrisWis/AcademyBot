@@ -1,1 +1,1 @@
-from states import Student, SupportAgent, Leader
+from states import Student, SupportAgent, Leader, Manager

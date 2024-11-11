@@ -202,7 +202,7 @@ class AsyncORM:
             user = UsersOrm(user_id=user_id, username=username, user_reg_date=user_reg_date, user_geo=user_geo)
             user_profile = UsersProfileOrm(user_id=user_id, status=user_default_status,
             completed_courses=[], purchased_courses=[], balance=0)
-            user_refInfo = UsersRefsOrm(user_id=user_id, referrer_id=referrer_id, ref_percent=20)
+            user_refInfo = UsersRefsOrm(user_id=user_id, profile_user_id=user_id, referrer_id=referrer_id, ref_percent=20)
             
             async with async_session() as session:
                 session.add(user)
@@ -235,18 +235,19 @@ class AsyncORM:
             return result.scalar_one_or_none()
         
 
-    # Получение всех реферралов пользователя по его id
+    # Получение всех рефералов пользователя по его id
     @staticmethod
-    async def get_user_referrals(user_id: int) -> list[UsersRefsOrm]:
+    async def get_user_referals(user_id: int) -> list[UsersRefsOrm]:
         async with async_session() as session:
-
             result = await session.execute(
-                select(UsersRefsOrm).where(UsersRefsOrm.referrer_id == user_id).options(joinedload(UsersRefsOrm.profile).selectinload(UsersProfileOrm.purchased_courses))
+                select(UsersRefsOrm).where(UsersRefsOrm.referrer_id == user_id)
+                .options(joinedload(UsersRefsOrm.profile).selectinload(UsersProfileOrm.purchased_courses),
+                    joinedload(UsersRefsOrm.user))
             )
 
-            referrals = result.scalars().all()
+            referals = result.scalars().all()
 
-            return referrals
+            return referals
         
 
     # Получение реферрера пользователя по id пользователя
@@ -263,15 +264,15 @@ class AsyncORM:
             return referrer_id
         
     
-    # Получение всех купленных курсов реферралами пользователя по его id
+    # Получение всех купленных курсов рефералами пользователя по его id
     @staticmethod
-    async def get_referrals_purchased_courses(user_id: int) -> list[PurchasedCoursesOrm]:
-        user_referrals = await AsyncORM.get_user_referrals(user_id)
+    async def get_referals_purchased_courses(user_id: int) -> list[PurchasedCoursesOrm]:
+        user_referals = await AsyncORM.get_user_referals(user_id)
         purchased_courses_arr = []
 
-        for user_referral in user_referrals:
-            if (user_referral.profile.purchased_courses):
-                purchased_courses_arr.append(*user_referral.profile.purchased_courses)
+        for user_referal in user_referals:
+            if (user_referal.profile.purchased_courses):
+                purchased_courses_arr.append(*user_referal.profile.purchased_courses)
 
         return purchased_courses_arr
     
@@ -429,6 +430,19 @@ class AsyncORM:
             stmt = (update(UsersProfileOrm)
                     .where(UsersProfileOrm.user_id == user_id)
                     .values(status=status))
+            
+            await session.execute(stmt)
+            await session.commit()
+            return True
+
+    
+    # Изменение реферального процента пользователя
+    @staticmethod
+    async def change_user_ref_percent(user_id: int, new_percent: int) -> bool:
+        async with async_session() as session:
+            stmt = (update(UsersRefsOrm)
+                    .where(UsersRefsOrm.user_id == user_id)
+                    .values(ref_percent=new_percent))
             
             await session.execute(stmt)
             await session.commit()
