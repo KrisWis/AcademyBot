@@ -6,6 +6,7 @@ from InstanceBot import router, bot
 from database.orm import AsyncORM
 from keyboards import profileKeyboards
 from states.Student import ProfileStates
+from states.Manager import ManagerRefStates
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from credit_card_checker import CreditCardChecker
@@ -14,6 +15,8 @@ from utils import cryptoPayment
 import asyncio
 import os
 from utils.const import statuses
+import math
+
 
 # Отправка меню профиля
 async def send_profile(call: types.CallbackQuery) -> None:
@@ -145,7 +148,7 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
 
             await AsyncORM.change_user_balance(user_referrer_id, user_referrer_sum)
             
-            await bot.send_message(user_referrer_id, profile_text.successful_referral_replenish_text.format(username, data["payment_summa"], user_referrer_sum))
+            await bot.send_message(user_referrer_id, profile_text.successful_referal_replenish_text.format(username, data["payment_summa"], user_referrer_sum))
 
         await call.message.answer(profile_text.successful_replenish_text.format(data["payment_summa"]), reply_markup=types.ReplyKeyboardRemove())
 
@@ -246,6 +249,7 @@ async def send_profile_write_cardNumber(message: types.Message, state: FSMContex
 
         await state.clear()
 
+
 # Отправка сообщения с подтверждением данных о выводе
 async def send_profile_confirmation(message: types.Message, state: FSMContext) -> None:
     data = await state.get_data()
@@ -317,15 +321,15 @@ async def successful_replenish(message: types.Message, state: FSMContext):
 
         await AsyncORM.change_user_balance(user_referrer_id, user_referrer_sum)
         
-        await bot.send_message(user_referrer_id, profile_text.successful_referral_replenish_text.format(username, data["payment_summa"], user_referrer_sum))
+        await bot.send_message(user_referrer_id, profile_text.successful_referal_replenish_text.format(username, data["payment_summa"], user_referrer_sum))
         
     await bot.send_message(message.chat.id, profile_text.successful_replenish_text.format(message.successful_payment.total_amount))
 
     await state.set_state(None)
 
 
-# Отправка меню "Реферралы"
-async def send_referrals_menu(call: types.CallbackQuery, state: FSMContext) -> None:
+# Отправка меню "рефералы"
+async def send_referals_menu(call: types.CallbackQuery, state: FSMContext) -> None:
     
     user_id = call.from_user.id
     message_id = call.message.message_id
@@ -336,21 +340,21 @@ async def send_referrals_menu(call: types.CallbackQuery, state: FSMContext) -> N
 
     user_status = await AsyncORM.get_user_status(user_id)
 
-    await call.message.answer(profile_text.profile_referrals_menu_text.
-    format(f'https://t.me/{bot_username}?start={user_id}'), reply_markup=profileKeyboards.profile_referrals_menu(user_status))
+    await call.message.answer(profile_text.profile_referals_menu_text.
+    format(f'https://t.me/{bot_username}?start={user_id}'), reply_markup=profileKeyboards.profile_referals_menu(user_status))
 
 
-# Отправка сообщения с динамикой и статистикой реферралов пользователя
-async def send_referrals_dynamics(call: types.CallbackQuery) -> None:
+# Отправка сообщения с динамикой и статистикой рефералов пользователя
+async def send_referals_dynamics(call: types.CallbackQuery) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
     # Получаем все нужные данные из бд
-    user_referrals = await AsyncORM.get_user_referrals(user_id)
+    user_referals = await AsyncORM.get_user_referals(user_id)
 
-    user_referrals_purchased_courses = await AsyncORM.get_referrals_purchased_courses(user_id)
+    user_referals_purchased_courses = await AsyncORM.get_referals_purchased_courses(user_id)
 
     profile_info = await AsyncORM.get_profile_info(user_id)
 
@@ -360,52 +364,211 @@ async def send_referrals_dynamics(call: types.CallbackQuery) -> None:
 
     ref_percent = user_ref_info.ref_percent
 
-    if len(user_referrals_purchased_courses) == 0:
-        await call.message.answer(profile_text.profile_referrals_dynamics_empty_text.
-        format(len(user_referrals), user_balance, ref_percent), reply_markup=profileKeyboards.profile_referrals_back_kb())
+    if len(user_referals_purchased_courses) == 0:
+        await call.message.answer(profile_text.profile_referals_dynamics_empty_text.
+        format(len(user_referals), user_balance, ref_percent), reply_markup=profileKeyboards.profile_referals_back_kb())
 
         return
 
-    conversionPercent = len(user_referrals_purchased_courses) / len(user_referrals) * 100
+    conversionPercent = len(user_referals_purchased_courses) / len(user_referals) * 100
 
     # Получаем курсы, которые были куплены сегодня/в этом месяце/за всё время и потом цену каждого из них присваиваем для константы
-    user_referrals_purchased_today_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('day')
-    user_referrals_purchased_thisMonth_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('month')
-    user_referrals_purchased_allTime_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses()
+    user_referals_purchased_today_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('day')
+    user_referals_purchased_thisMonth_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('month')
+    user_referals_purchased_allTime_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses()
 
-    user_referrals_purchased_today_courses_totalPrice = user_referrals_purchased_today_courses.reduce(
+    user_referals_purchased_today_courses_totalPrice = user_referals_purchased_today_courses.reduce(
         lambda acc, purchasedCourse: acc + purchasedCourse.price, 0)
 
-    user_referrals_purchased_thisMonth_courses_totalPrice = user_referrals_purchased_thisMonth_courses.reduce(
+    user_referals_purchased_thisMonth_courses_totalPrice = user_referals_purchased_thisMonth_courses.reduce(
         lambda acc, purchasedCourse: acc + purchasedCourse.price, 0)
     
-    user_referrals_purchased_allTime_courses_totalPrice = user_referrals_purchased_allTime_courses.reduce(
+    user_referals_purchased_allTime_courses_totalPrice = user_referals_purchased_allTime_courses.reduce(
         lambda acc, purchasedCourse: acc + purchasedCourse.price, 0)
 
     # Высылаем сообщение
-    await call.message.answer(profile_text.profile_referrals_dynamics_text.
-    format(conversionPercent, len(user_referrals), len(user_referrals_purchased_courses),
-    user_referrals_purchased_today_courses_totalPrice, user_referrals_purchased_thisMonth_courses_totalPrice,
-    user_referrals_purchased_allTime_courses_totalPrice, user_balance, ref_percent), reply_markup=profileKeyboards.profile_referrals_back_kb())
+    await call.message.answer(profile_text.profile_referals_dynamics_text.
+    format(conversionPercent, len(user_referals), len(user_referals_purchased_courses),
+    user_referals_purchased_today_courses_totalPrice, user_referals_purchased_thisMonth_courses_totalPrice,
+    user_referals_purchased_allTime_courses_totalPrice, user_balance, ref_percent), reply_markup=profileKeyboards.profile_referals_back_kb())
 
 
-# Отправка материалов реферралов пользователя
-async def send_referrals_materials(call: types.CallbackQuery, state: FSMContext) -> None:
+# Отправка материалов рефералов пользователя
+async def send_referals_materials(call: types.CallbackQuery) -> None:
     user_id = call.from_user.id
     message_id = call.message.message_id
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
-    await call.message.answer(profile_text.profile_referrals_materials_text,
-    reply_markup=profileKeyboards.profile_referrals_back_kb())
+    await call.message.answer(profile_text.profile_referals_materials_text,
+    reply_markup=profileKeyboards.profile_referals_back_kb())
+
+
+# Отправка всех рефералов пользователя
+async def send_manager_referals(call: types.CallbackQuery) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    manager_referals = await AsyncORM.get_user_referals(user_id)
+
+    referals_per_page = 10
+
+    pages_amount = math.ceil(len(manager_referals) / referals_per_page)
+
+    if len(manager_referals) > 0:
+        await call.message.answer(profile_text.send_manager_referals_text.format(1, pages_amount), 
+                                reply_markup=profileKeyboards.manager_referals_kb(manager_referals))
+    else:
+        await call.message.answer(profile_text.manager_referals_none_text)
+
+
+# Обработка перелистывания страниц в инлайн клавиатуре рефералов менеджера
+async def send_manager_referals_page(call: types.CallbackQuery) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    temp = call.data.split("|")
+
+    page = temp[2]
+
+    action = temp[3]
+
+    if action == "next":
+        page = int(page) + 1
+
+    elif action == "prev":
+        page = int(page) - 1
+
+    manager_referals = await AsyncORM.get_user_referals(user_id)
+
+    referals_per_page = 10
+
+    pages_amount = math.ceil(len(manager_referals) / referals_per_page)
+
+    await call.message.answer(profile_text.send_manager_referals_text.format(1, pages_amount), 
+                        reply_markup=profileKeyboards.manager_referals_kb(manager_referals))
+
+
+# Отправка данных о реферале менеджера по нажатию на кнопку
+async def send_manager_referal_info(call: types.CallbackQuery, state: FSMContext) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    temp = call.data.split("|")
+
+    current_referal_id = int(temp[1])
+
+    await state.update_data(current_referal_id=current_referal_id)
+
+    # Получаем все нужные данные из бд
+    current_referal_referals = await AsyncORM.get_user_referals(current_referal_id)
+
+    current_referal_referals_purchased_courses = await AsyncORM.get_referals_purchased_courses(current_referal_id)
+
+    current_referal_profile_info = await AsyncORM.get_profile_info(current_referal_id)
+
+    current_referal_balance = current_referal_profile_info.balance
+
+    current_referal_ref_info = await AsyncORM.get_ref_info(current_referal_id)
+
+    current_referal_ref_percent = current_referal_ref_info.ref_percent
+
+    await call.message.answer(profile_text.send_manager_referal_info_text.format(current_referal_profile_info.user.username))
+
+    if len(current_referal_referals_purchased_courses) == 0:
+        await call.message.answer(profile_text.profile_referals_dynamics_empty_text.
+        format(len(current_referal_referals), current_referal_balance, current_referal_ref_percent), 
+        reply_markup=profileKeyboards.manager_referal_profile_kb())
+
+        return
+
+    conversionPercent = len(current_referal_referals_purchased_courses) / len(current_referal_referals) * 100
+
+    # Получаем курсы, которые были куплены сегодня/в этом месяце/за всё время и потом цену каждого из них присваиваем для константы
+    user_referals_purchased_today_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('day')
+    user_referals_purchased_thisMonth_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses('month')
+    user_referals_purchased_allTime_courses: list[PurchasedCoursesOrm] = await AsyncORM.get_purchased_courses()
+
+    user_referals_purchased_today_courses_totalPrice = user_referals_purchased_today_courses.reduce(
+        lambda acc, purchasedCourse: acc + purchasedCourse.price, 0)
+
+    user_referals_purchased_thisMonth_courses_totalPrice = user_referals_purchased_thisMonth_courses.reduce(
+        lambda acc, purchasedCourse: acc + purchasedCourse.price, 0)
+    
+    user_referals_purchased_allTime_courses_totalPrice = user_referals_purchased_allTime_courses.reduce(
+        lambda acc, purchasedCourse: acc + purchasedCourse.price, 0)
+
+    # Высылаем сообщение
+    await call.message.answer(profile_text.profile_referals_dynamics_text.
+    format(conversionPercent, len(current_referal_referals), len(current_referal_referals_purchased_courses),
+    user_referals_purchased_today_courses_totalPrice, user_referals_purchased_thisMonth_courses_totalPrice,
+    user_referals_purchased_allTime_courses_totalPrice, current_referal_balance, 
+    current_referal_ref_percent), reply_markup=profileKeyboards.manager_referal_profile_kb())
+    
+
+# Отправка сообщения для того, чтобы менеджер отправил нужный реферальный процент
+async def wait_ref_percent_for_manager_referal(call: types.CallbackQuery, state: FSMContext) -> None:
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    await call.message.answer(profile_text.write_ref_percent_for_manager_referal_text)
+
+    await state.set_state(ManagerRefStates.write_ref_percent)
+
+
+# Отправка сообщения об изменении реферального процента реферала менеджера
+async def change_ref_percent_for_manager_referal(message: types.Message, state: FSMContext) -> None:
+    user_id = message.from_user.id
+    message_id = message.message_id
+    username = message.from_user.username
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
+    
+    try:
+        future_ref_percent = int(message.text)
+
+        if future_ref_percent < 0 or future_ref_percent > 50:
+            await message.answer(profile_text.change_ref_percent_for_manager_referal_error_text)
+
+            return
+    except:
+        await message.answer(text.invalid_data_text)
+
+    data = await state.get_data()
+
+    current_referal_id = int(data["current_referal_id"])
+
+    previous_ref_percent = await AsyncORM.get_user_ref_percent(current_referal_id)
+
+    current_referal = await AsyncORM.get_user(current_referal_id)
+
+    await AsyncORM.change_user_ref_percent(current_referal_id, future_ref_percent)
+
+    await bot.send_message(current_referal_id, 
+                        profile_text.change_ref_percent_manager_referal_text.format(username, previous_ref_percent, future_ref_percent))
+
+    await message.answer(profile_text.change_ref_percent_manager_text.format(current_referal.username, previous_ref_percent, future_ref_percent))
+
+    await state.get_state(None)
 
 
 def hand_add():
+    
     router.message.register(send_profile_made_payment, StateFilter(ProfileStates.choose_sumOfPayment))
 
     router.message.register(send_profile_write_cardNumber, StateFilter(ProfileStates.choose_sumOfWithdraw))
 
     router.message.register(send_profile_confirmation, StateFilter(ProfileStates.write_cardNumber))
+
+    router.message.register(change_ref_percent_for_manager_referal, StateFilter(ManagerRefStates.write_ref_percent))
 
     router.callback_query.register(send_profile, lambda c: c.data == 'start|profile')
 
@@ -421,11 +584,19 @@ def hand_add():
 
     router.callback_query.register(click_confirmation_agree, lambda c: c.data == "profile_confirmation|agree")
 
-    router.callback_query.register(send_referrals_menu, lambda c: c.data == 'profile|referrals')
+    router.callback_query.register(send_referals_menu, lambda c: c.data == 'profile|referals')
 
-    router.callback_query.register(send_referrals_dynamics, lambda c: c.data == 'profile_referrals_menu|dynamics')
+    router.callback_query.register(send_referals_dynamics, lambda c: c.data == 'profile_referals_menu|dynamics')
 
-    router.callback_query.register(send_referrals_materials, lambda c: c.data == 'profile_referrals_menu|materials')
+    router.callback_query.register(send_referals_materials, lambda c: c.data == 'profile_referals_menu|materials')
+
+    router.callback_query.register(send_manager_referals, lambda c: c.data == 'profile_referals_menu|referals')
+
+    router.callback_query.register(send_manager_referals_page, lambda c: c.data.startswith('manager_referals|page'))
+
+    router.callback_query.register(send_manager_referal_info, lambda c: c.data.startswith('manager_referals'))
+
+    router.callback_query.register(wait_ref_percent_for_manager_referal, lambda c: c.data == "manager_referal|change_percent")
 
     router.pre_checkout_query.register(pre_checkout_query)
 

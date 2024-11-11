@@ -222,11 +222,6 @@ async def wait_username_for_changeStatus(call: types.CallbackQuery, state: FSMCo
 
 # Отправка сообщения с текущим статусом пользователя и возможностью его изменения
 async def send_currentUserStatus(message: types.Message, state: FSMContext) -> None:
-    user_id = message.from_user.id
-    message_id = message.message_id
-
-    await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
-
     user_username_for_change = message.text[1:]
 
     await state.update_data(user_username_for_change=user_username_for_change)
