@@ -16,12 +16,6 @@ async def start(message: types.Message, state: FSMContext):
     now = datetime.datetime.now()
 
     data = await state.get_data()
-
-    date_format = "%Y-%m-%d %H:%M:%S"
-
-    formatted_time = now.strftime(date_format)
-
-    formatted_time = datetime.datetime.strptime(formatted_time, date_format)
     
     if not await AsyncORM.get_user(user_id):
         referrer_id = message.text[7:] or None
@@ -42,7 +36,7 @@ async def start(message: types.Message, state: FSMContext):
         await AsyncORM.add_user(
             user_id,
             username,
-            formatted_time,
+            now,
             message.from_user.language_code,
             referrer_id
         )

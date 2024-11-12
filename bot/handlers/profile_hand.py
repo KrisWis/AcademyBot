@@ -29,12 +29,12 @@ async def send_profile(call: types.CallbackQuery) -> None:
 
     if profile_info.status == statuses["partner"]:
         await call.message.answer(profile_text.partner_profile_text.
-        format(profile_info.user.user_reg_date, 
+        format(profile_info.user.user_reg_date.strftime("%d.%m.%Y"), 
         len(profile_info.completed_courses), ";\n".join(profile_info.completed_courses), profile_info.balance), 
         reply_markup=profileKeyboards.profile_menu())
     else:
         await call.message.answer(profile_text.profile_text.
-        format(profile_info.status, profile_info.user.user_reg_date, 
+        format(profile_info.status, profile_info.user.user_reg_date.strftime("%d.%m.%Y"), 
         len(profile_info.completed_courses), ";\n".join(profile_info.completed_courses), profile_info.balance), 
         reply_markup=profileKeyboards.profile_menu())
     
@@ -73,9 +73,12 @@ async def send_profile_choose_sumOfPayment(call: types.CallbackQuery, state: FSM
 # Отправка подтверждения оплаты на пополнение
 async def send_profile_made_payment(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
+    username = message.from_user.username
     message_id = message.message_id
 
     await bot.delete_message(chat_id=user_id, message_id=message_id - 1)
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
 
     data = await state.get_data()
 
@@ -90,53 +93,26 @@ async def send_profile_made_payment(message: types.Message, state: FSMContext):
     else:
         payment_summa = int(message.text)
 
-    await state.update_data(payment_summa=payment_summa)
-
     if data["methodOfPayment"] == "CryptoBot": 
 
         invoice = await cryptoPayment.create_crypto_bot_invoice(payment_summa, "USDT")
         
-        await message.answer(profile_text.profile_confirmation_crypto_text.format(payment_summa, invoice.amount),
-        reply_markup=profileKeyboards.check_payment_crypto(invoice.bot_invoice_url, invoice.invoice_id))
+        kb_message = await message.answer(profile_text.profile_confirmation_crypto_text.format(payment_summa, invoice.amount),
+        reply_markup=profileKeyboards.check_payment_crypto(invoice.bot_invoice_url))
 
-        await state.set_state(None)
+        while True:
+            await asyncio.sleep(30)
 
-    elif data["methodOfPayment"] == "bankCard":
-        await message.answer(profile_text.profile_payment_write_cardNumber_text, reply_markup=types.ReplyKeyboardRemove())
-
-        await state.set_state(ProfileStates.write_cardNumber)
-
-
-# Обработка подтверждения/отклонения оплаты на пополнение
-async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
-    user_id = call.from_user.id
-    username = call.from_user.username
-    temp = call.data.split('|')
-    data = await state.get_data()
-    message_id = call.message.message_id
-
-    if temp[2] == "back":
-        await bot.delete_message(chat_id=user_id, message_id=message_id)
-
-        await call.message.answer(profile_text.profile_choose_sumOfPayment_text, reply_markup=profileKeyboards.profile_choose_sum_kb())
-
-        await state.set_state(ProfileStates.choose_sumOfPayment)
-
-        return
-
-    if not await cryptoPayment.check_crypto_bot_invoice(int(temp[2])):
-        await call.message.answer(
-            text=text.error_payment_text,
-            reply_markup=types.ReplyKeyboardRemove(),
-            show_alert=True
-        )
-
-    else:
-        await bot.delete_message(chat_id=user_id, message_id=message_id)
+            if await cryptoPayment.check_crypto_bot_invoice(invoice.invoice_id):
+                break
         
-        await AsyncORM.change_user_balance(user_id, int(data["payment_summa"]))
+        try:
+            await bot.delete_message(chat_id=user_id, message_id=kb_message.message_id)
+        except: pass
+        
+        await AsyncORM.change_user_balance(user_id, payment_summa)
 
-        await AsyncORM.add_replenishBalance_info(user_id, int(data["payment_summa"]), datetime.now())
+        await AsyncORM.add_replenishBalance_info(user_id, payment_summa, datetime.now())
 
         user_referrer_id = await AsyncORM.get_user_referrer_id(user_id)
 
@@ -144,17 +120,32 @@ async def check_crypto_payment(call: types.CallbackQuery, state: FSMContext):
 
             user_referrer_percent = await AsyncORM.get_user_ref_percent(user_referrer_id)
 
-            user_referrer_sum = int(int(data["payment_summa"]) * user_referrer_percent / 100)
+            user_referrer_sum = int(payment_summa * user_referrer_percent / 100)
 
             await AsyncORM.change_user_balance(user_referrer_id, user_referrer_sum)
             
-            await bot.send_message(user_referrer_id, profile_text.successful_referal_replenish_text.format(username, data["payment_summa"], user_referrer_sum))
+            await bot.send_message(user_referrer_id, profile_text.successful_referal_replenish_text.format(username, payment_summa, user_referrer_sum))
 
-        await call.message.answer(profile_text.successful_replenish_text.format(data["payment_summa"]), reply_markup=types.ReplyKeyboardRemove())
-
-        await state.set_state(None)
+        await message.answer(profile_text.successful_replenish_text.format(payment_summa), reply_markup=types.ReplyKeyboardRemove())
 
         await state.clear()
+
+    elif data["methodOfPayment"] == "bankCard":
+        await message.answer(profile_text.profile_payment_write_cardNumber_text, reply_markup=types.ReplyKeyboardRemove())
+
+        await state.set_state(ProfileStates.write_cardNumber)
+
+
+# Обработка кнопки отмены в меню подтверждения оплаты криптовалютой
+async def crypto_cancel(call: types.CallbackQuery, state: FSMContext):
+    user_id = call.from_user.id
+    message_id = call.message.message_id
+
+    await bot.delete_message(chat_id=user_id, message_id=message_id)
+
+    await call.message.answer(profile_text.cancel_replenish_text)
+
+    await state.clear()
 
 
 # Отправка меню выбора способа вывода
@@ -164,12 +155,16 @@ async def send_profile_choose_withdraw(call: types.CallbackQuery, state: FSMCont
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
-    kb_messageid = await call.message.answer(profile_text.profile_choose_withdraw_text, 
-    reply_markup=profileKeyboards.profile_choose_withdraw_menu())
+    # TODO: ВЫВОД ВРЕМЕННО НЕДОСТУПЕН
+    # kb_messageid = await call.message.answer(profile_text.profile_choose_withdraw_text, 
+    # reply_markup=profileKeyboards.profile_choose_withdraw_menu())
 
-    await state.update_data(kb_messageid=kb_messageid.message_id)
+    # await state.update_data(kb_messageid=kb_messageid.message_id)
 
-    await state.update_data(financeMethod="withdraw")
+    # await state.update_data(financeMethod="withdraw")
+
+    await call.message.answer(profile_text.profile_withdraw_disabled_text, 
+    reply_markup=profileKeyboards.profile_menu_back_kb())
 
 
 # Отправка меню выбора суммы вывода
@@ -329,7 +324,7 @@ async def successful_replenish(message: types.Message, state: FSMContext):
 
 
 # Отправка меню "рефералы"
-async def send_referals_menu(call: types.CallbackQuery, state: FSMContext) -> None:
+async def send_referals_menu(call: types.CallbackQuery) -> None:
     
     user_id = call.from_user.id
     message_id = call.message.message_id
@@ -576,11 +571,11 @@ def hand_add():
 
     router.callback_query.register(send_profile_choose_sumOfPayment, lambda c: c.data in ["profile_choose_replenish|CryptoBot", "profile_choose_replenish|bankCard"])
 
-    router.callback_query.register(check_crypto_payment, lambda c: c.data.startswith("payment|CryptoBot"))
-
     router.callback_query.register(send_profile_choose_withdraw, lambda c: c.data == 'profile|withdraw')
 
     router.callback_query.register(send_profile_choose_sumOfWithdraw, lambda c: c.data in ["profile_choose_withdraw|CryptoBot", "profile_choose_withdraw|bankCard"])
+    
+    router.callback_query.register(crypto_cancel, lambda c: c.data == "payment|CryptoBot|cancel")
 
     router.callback_query.register(click_confirmation_agree, lambda c: c.data == "profile_confirmation|agree")
 

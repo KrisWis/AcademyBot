@@ -1,0 +1,1 @@
+from helpers.nowIsSupportGraphic import nowIsSupportGraphic

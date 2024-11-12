@@ -5,6 +5,7 @@ from keyboards import faqKeyboards
 from aiogram.fsm.context import FSMContext
 from utils import support_text
 from states import Student
+from helpers import nowIsSupportGraphic
 
 # Отправка меню "FAQ"
 async def send_faqMenu(call: types.CallbackQuery, state: FSMContext) -> None:
@@ -23,7 +24,12 @@ async def send_faq_support(call: types.CallbackQuery, state: FSMContext) -> None
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
-    await call.message.answer(support_text.support_text, reply_markup=faqKeyboards.backTo_faqMenu_kb())
+    if nowIsSupportGraphic():
+        message_text = support_text.support_without_graphic_text
+    else:
+        message_text = support_text.support_text
+
+    await call.message.answer(message_text, reply_markup=faqKeyboards.backTo_faqMenu_kb())
 
     await state.set_state(Student.SupportStates.write_text_of_supportTicket)
 

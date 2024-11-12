@@ -89,13 +89,21 @@ def profile_referals_back_kb():
     return kb
 
 
+# Клавиатура с возвратом назад в меню профиля
+def profile_menu_back_kb():
+    kb = InlineKeyboardMarkup(row_width=1, 
+    inline_keyboard=[
+    [InlineKeyboardButton(text='↩️ Назад', callback_data='start|profile')]])
+
+    return kb
+
+
 # Клавиатура для проверки оплаты с помощью криптовалюты
-def check_payment_crypto(pay_url, invoice_id):
+def check_payment_crypto(pay_url):
     kb = InlineKeyboardMarkup(row_width=1,
     inline_keyboard=[
-        [InlineKeyboardButton(text='Оплатить', url=pay_url)],
-        [InlineKeyboardButton(text='Проверить оплату', callback_data=f'payment|CryptoBot|{invoice_id}')],
-        [InlineKeyboardButton(text='Отменить', callback_data=f'payment|CryptoBot|back')]
+        [InlineKeyboardButton(text='✅ Оплатить', url=pay_url)],
+        [InlineKeyboardButton(text='❌ Отменить', callback_data=f'payment|CryptoBot|cancel')]
         ])
 
     return kb

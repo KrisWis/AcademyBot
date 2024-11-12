@@ -11,7 +11,7 @@ logging.basicConfig(filename='Logs.log', level=logging.INFO)
 async def on_startup() -> None:
 
     # Пересоздаём таблицы в базе данных (для тестов).
-    # await AsyncORM.create_tables()
+    await AsyncORM.create_tables()
 
     # Определяем команды и добавляем их в бота
     commands = [

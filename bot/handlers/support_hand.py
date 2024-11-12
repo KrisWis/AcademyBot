@@ -12,6 +12,8 @@ import math
 from states.SupportAgent import SupportAgentStates
 from RunBot import logger
 from states.Student import SupportStates
+from helpers import nowIsSupportGraphic
+
 
 # Отправка сообщения, чтобы пользователь отправил сообщение в поддержку
 async def send_support(call: types.CallbackQuery, state: FSMContext) -> None:
@@ -20,7 +22,12 @@ async def send_support(call: types.CallbackQuery, state: FSMContext) -> None:
 
     await bot.delete_message(chat_id=user_id, message_id=message_id)
 
-    await call.message.answer(support_text.support_text, reply_markup=globalKeyboards.backTo_mainMenu_kb())
+    if nowIsSupportGraphic():
+        message_text = support_text.support_without_graphic_text
+    else:
+        message_text = support_text.support_text
+
+    await call.message.answer(message_text, reply_markup=globalKeyboards.backTo_mainMenu_kb())
 
     await state.set_state(SupportStates.write_text_of_supportTicket)
     
